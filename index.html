@@ -355,8 +355,8 @@ function renderAdminLogin(){
 function renderAdminPanel(){
   app.innerHTML=
     `<h1>Projeção Financeira <span class="adm-badge">ADMIN</span></h1>
-     <div class="sub">Edite os valores travados (CPC, Taxa de conversão, Ticket e Investimento padrão).
-       Ao salvar, eles passam a valer para todos na página principal.</div>
+     <div class="sub">Edite os valores de entrada de cada guia — os resultados são calculados automaticamente.
+       Ao salvar, os valores passam a valer como padrão para todos na página principal.</div>
      <div id="admTabs"></div>`;
   const host=document.getElementById('admTabs');
   ['mid','low'].forEach(tab=>{
@@ -371,53 +371,77 @@ function buildAdminTab(tab){
   const wrap=document.createElement('div'); wrap.className='adm-tab';
   wrap.innerHTML=
     `<h3>${TAB_NAME[tab]}</h3>
-     <p class="hint">Valores exibidos e travados nesta guia da página principal.</p>
-     <div class="adm-grid">
-       ${fld(tab,'cpc','CPC','R$')}
-       ${fld(tab,'conv','Taxa de conversão','','%')}
-       ${fld(tab,'ticket','Ticket / Preço','R$')}
-       ${fld(tab,'investimento','Investimento padrão','R$')}
-     </div>
-     <div class="preview" id="prev-${tab}"></div>
+     <p class="hint">Campos de entrada editáveis; os demais são resultado das fórmulas.</p>
+     <div class="sheet" data-sheet="${tab}"></div>
+     <div class="section-title anual-head" style="margin:22px 0 12px">Projeção anual
+       <span class="base">· base: 12 meses</span></div>
+     <div class="cards" data-cards="${tab}"></div>
      <div class="adm-save">
        <button class="btn small" data-save="${tab}">Salvar</button>
        <span class="msg" id="msg-${tab}"></span>
      </div>`;
-  // liga inputs
   setTimeout(()=>{
-    wrap.querySelectorAll('input').forEach(inp=>{
-      inp.addEventListener('input',()=>{
-        let v=parseNum(inp.value);
-        if(inp.dataset.k==='conv') v=v/100;
-        admState[tab][inp.dataset.k]=v;
-        renderAdminPreview(tab);
-      });
-      inp.addEventListener('focus',e=>e.target.select());
-    });
+    buildAdminSheet(tab);
     wrap.querySelector(`[data-save="${tab}"]`).addEventListener('click',()=>saveTab(tab));
-    renderAdminPreview(tab);
   });
   return wrap;
 }
-function fld(tab,k,label,pre,suf){
-  const raw=CONFIG[tab][k];
-  const shown = k==='conv' ? num2.format(raw*100) : num2.format(raw);
-  return `<div class="fld"><label>${label}</label>
-    <div class="in">${pre?`<span>${pre}</span>`:''}
-      <input type="text" data-k="${k}" value="${shown}">${suf?`<span>${suf}</span>`:''}</div></div>`;
+
+function buildAdminSheet(tab){
+  const box=document.querySelector(`[data-sheet="${tab}"]`); if(!box) return;
+  box.innerHTML='';
+  ROWS.forEach(r=>{
+    const isInput=r.kind==='input';
+    const row=document.createElement('div');
+    row.className='row '+(!isInput?'locked ':'')+(r.strong?'strong':'');
+    const lock=!isInput?lockSvg:'';
+    const info=r.info?infoIcon(r.info):'';
+    let right;
+    if(isInput){
+      const raw=admState[tab][wkeyOf(r.key)];
+      const shown=r.fmt==='pct2'?num2.format(raw*100):num2.format(raw);
+      const unit =r.fmt==='pct2'?'<span class="unit">%</span>':'';
+      right=`<span style="display:flex;align-items:center;gap:5px">`+
+        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}">${unit}</span>`;
+    }else{
+      right=`<span class="val" data-aout="${tab}-${r.key}">—</span>`;
+    }
+    row.innerHTML=`<span class="name">${lock}${r.label}${info}</span>${right}`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input').forEach(inp=>{
+    inp.addEventListener('input',()=>{
+      const f=inp.dataset.fmt; let v=parseNum(inp.value); if(f==='pct2') v=v/100;
+      admState[tab][wkeyOf(inp.dataset.rkey)]=v; recalcAdmin(tab);
+    });
+    inp.addEventListener('focus',e=>e.target.select());
+    inp.addEventListener('blur',()=>{
+      const f=inp.dataset.fmt, raw=admState[tab][wkeyOf(inp.dataset.rkey)];
+      inp.value=f==='pct2'?num2.format(raw*100):num2.format(raw);
+    });
+  });
+  const cbox=document.querySelector(`[data-cards="${tab}"]`); cbox.innerHTML='';
+  ANNUAL.forEach(a=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="clbl">${lockSvg.replace(/14/g,'12')}${a.label}</div>`+
+                `<div class="cval" data-acard="${tab}-${a.key}">—</div>`;
+    cbox.appendChild(c);
+  });
+  recalcAdmin(tab);
 }
-function renderAdminPreview(tab){
+
+function recalcAdmin(tab){
   const m=calc(admState[tab]);
-  const box=document.getElementById('prev-'+tab); if(!box) return;
-  const line=(l,v)=>`<div class="pr"><span>${l}</span><b>${v}</b></div>`;
-  box.innerHTML=
-    line('Clique', fmt(m.clique,'num2'))+
-    line('Venda',  fmt(m.venda,'int'))+
-    line('Faturamento', fmt(m.fat,'brl'))+
-    line('CPA / CAC', fmt(m.cpa,'brl'))+
-    line('Lucro', fmt(m.lucro,'brl'))+
-    line('Faturamento no ano (×12)', fmt(m.fat*12,'brl'))+
-    line('Lucro no ano (×12)', fmt(m.lucro*12,'brl'));
+  ROWS.filter(r=>r.kind!=='input').forEach(r=>{
+    const el=document.querySelector(`[data-aout="${tab}-${r.key}"]`);
+    if(el){ el.textContent=fmt(m[r.key],r.fmt); if(r.key==='lucro') el.classList.toggle('neg',m.lucro<0); }
+  });
+  ANNUAL.forEach(a=>{
+    const el=document.querySelector(`[data-acard="${tab}-${a.key}"]`);
+    if(!el) return;
+    const v=a.sum?m[a.key]*12:m[a.key];
+    el.textContent=fmt(v,a.fmt); if(a.neg) el.classList.toggle('neg',v<0);
+  });
 }
 async function saveTab(tab){
   const v=admState[tab];
