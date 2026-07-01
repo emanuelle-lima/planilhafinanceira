@@ -30,7 +30,7 @@
     text-transform:uppercase;margin:30px 0 12px}
 
   /* Sheet */
-  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px}
   .row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;min-height:48px;gap:12px}
   .row + .row{border-top:1px solid var(--line)}
   .row .name{display:flex;align-items:center;gap:9px;font-size:14px}
@@ -53,12 +53,12 @@
     width:17px;height:17px;border-radius:50%;border:1.3px solid #c4ccd6;color:#a6aeba;
     font-size:11px;font-weight:700;font-style:italic;cursor:help;flex:none;font-family:Georgia,serif;line-height:1}
   .info:hover,.info:focus{border-color:var(--accent);color:var(--accent);outline:none}
-  .info .tip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(4px);
-    width:250px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
-    box-shadow:0 8px 26px rgba(24,32,48,.14);opacity:0;visibility:hidden;transition:.16s;z-index:20;text-align:left}
-  .info:hover .tip,.info:focus .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
-  .info .tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
-    border:6px solid transparent;border-top-color:#fff}
+  .info .tip{position:absolute;top:calc(100% + 9px);left:-10px;transform:translateY(4px);
+    width:250px;max-width:min(250px,76vw);background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+    box-shadow:0 8px 26px rgba(24,32,48,.14);opacity:0;visibility:hidden;transition:.16s;z-index:30;text-align:left}
+  .info:hover .tip,.info:focus .tip{opacity:1;visibility:visible;transform:translateY(0)}
+  .info .tip::after{content:"";position:absolute;bottom:100%;left:16px;
+    border:6px solid transparent;border-bottom-color:#fff}
   .tip-desc{display:block;font-size:12.5px;color:var(--ink);font-weight:500;font-style:normal;line-height:1.5}
   .tip-ref{display:block;font-size:11.5px;color:#b8c0cc;font-weight:400;font-style:normal;margin-top:7px;line-height:1.4}
 
@@ -189,15 +189,15 @@ const lockSvg = `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock
 
 // kind: bench (travado, definido pelo admin) | calc (fórmula) | input (usuário edita)
 const ROWS = [
-  {key:'cpc',   label:'CPC',               kind:'bench', fmt:'brl',  info:'cpc'},
+  {key:'cpc',   label:'CPC',               kind:'input', fmt:'brl',  info:'cpc'},
   {key:'clique',label:'Clique',            kind:'calc',  fmt:'num2'},
-  {key:'conv',  label:'Taxa de conversão', kind:'bench', fmt:'pct2'},
+  {key:'conv',  label:'Taxa de conversão', kind:'input', fmt:'pct2'},
   {key:'venda', label:'Venda',             kind:'calc',  fmt:'int'},
   {key:'fat',   label:'Faturamento',       kind:'calc',  fmt:'brl'},
   {key:'inv',   label:'Investimento',      kind:'input', fmt:'brl',  strong:true},
   {key:'cpa',   label:'CPA / CAC',         kind:'calc',  fmt:'brl',  info:'cpa'},
   {key:'lucro', label:'Lucro',             kind:'calc',  fmt:'brl',  strong:true},
-  {key:'ticket',label:'Ticket / Preço',    kind:'bench', fmt:'brl',  info:'ticket'},
+  {key:'ticket',label:'Ticket / Preço',    kind:'input', fmt:'brl',  info:'ticket'},
 ];
 const ANNUAL = [
   {key:'fat',    label:'Faturamento no ano', fmt:'brl',  sum:true},
@@ -244,28 +244,45 @@ function selectTab(tab){
   recalcMain();
 }
 
+const wkeyOf = rkey => rkey==='inv' ? 'investimento' : rkey;
+
 function buildSheet(){
   const box=document.getElementById('sheet'); box.innerHTML='';
   ROWS.forEach(r=>{
-    const locked = r.kind!=='input';
+    const isInput = r.kind==='input';
     const row=document.createElement('div');
-    row.className='row '+(locked?'locked ':'')+(r.strong?'strong':'');
-    const lock = locked ? lockSvg : '';
+    row.className='row '+(!isInput?'locked ':'')+(r.strong?'strong':'');
+    const lock = !isInput ? lockSvg : '';
     const info = r.info ? infoIcon(r.info) : '';
     let right;
-    if(r.kind==='input'){
-      right=`<span style="display:flex;align-items:center;gap:2px">
-        <input type="text" value="${num2.format(work.investimento)}" id="inp-inv"></span>`;
+    if(isInput){
+      const raw=work[wkeyOf(r.key)];
+      const shown = r.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
+      const unit  = r.fmt==='pct2' ? '<span class="unit">%</span>' : '';
+      right=`<span style="display:flex;align-items:center;gap:5px">`+
+        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}">${unit}</span>`;
     }else{
       right=`<span class="val" data-out="${r.key}">—</span>`;
     }
     row.innerHTML=`<span class="name">${lock}${r.label}${info}</span>${right}`;
     box.appendChild(row);
   });
-  const inv=document.getElementById('inp-inv');
-  inv.addEventListener('input',()=>{ work.investimento=parseNum(inv.value); recalcMain(); });
-  inv.addEventListener('focus',e=>e.target.select());
-  inv.addEventListener('blur',()=> inv.value=num2.format(work.investimento));
+  box.querySelectorAll('.row input').forEach(inp=>{
+    inp.addEventListener('input',onMainInput);
+    inp.addEventListener('focus',e=>e.target.select());
+    inp.addEventListener('blur',onMainBlur);
+  });
+}
+function onMainInput(e){
+  const f=e.target.dataset.fmt;
+  let v=parseNum(e.target.value);
+  if(f==='pct2') v=v/100;
+  work[wkeyOf(e.target.dataset.rkey)]=v;
+  recalcMain();
+}
+function onMainBlur(e){
+  const f=e.target.dataset.fmt, raw=work[wkeyOf(e.target.dataset.rkey)];
+  e.target.value = f==='pct2' ? num2.format(raw*100) : num2.format(raw);
 }
 
 function buildCards(){
