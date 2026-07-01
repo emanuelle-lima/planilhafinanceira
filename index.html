@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projeção Financeira</title>
+<style>
+  :root{
+    --bg:#f7f8fa; --panel:#ffffff; --line:#eceef1;
+    --ink:#1c2430;         /* preto dos editáveis */
+    --muted:#98a1af;       /* cadeado / travados apagados */
+    --muted-txt:#8a929f;
+    --accent:#3b6fd4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
+    background:var(--bg);color:var(--ink);padding:40px 20px 64px}
+  .wrap{max-width:760px;margin:0 auto}
+
+  h1{font-size:24px;margin:0;font-weight:700;letter-spacing:.2px}
+  .sub{font-size:14px;color:var(--muted-txt);margin-top:6px}
+
+  .section-title{font-size:12.5px;color:var(--muted-txt);font-weight:700;letter-spacing:1.2px;
+    text-transform:uppercase;margin:34px 0 12px}
+
+  /* ---------- Projeção mensal (tabela leve, 1 coluna) ---------- */
+  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:48px}
+  .row + .row{border-top:1px solid var(--line)}
+  .row .name{display:flex;align-items:center;gap:9px;font-size:14px}
+  .row.locked .name{color:var(--muted-txt)}
+  .row.strong .name{font-weight:600;color:var(--ink)}
+  .lock-ic{color:var(--muted);flex:none}
+
+  .val{font-size:14.5px;font-variant-numeric:tabular-nums;text-align:right}
+  .row.locked .val{color:var(--muted-txt)}
+  .row.strong .val{font-weight:700}
+  .val.neg{color:#c0392b}
+
+  /* input editável: texto preto, campo discreto */
+  .row input{width:150px;text-align:right;font-family:inherit;font-size:14.5px;font-weight:600;
+    font-variant-numeric:tabular-nums;color:var(--ink);background:#fff;
+    border:1px solid #dfe3e9;border-radius:8px;padding:7px 10px;transition:.12s}
+  .row input:hover{border-color:#c3c9d2}
+  .row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
+  .unit{color:var(--muted);font-size:12.5px;margin-left:2px}
+
+  /* ---------- Projeção anual (cards) ---------- */
+  .anual-head{display:flex;align-items:baseline;gap:10px}
+  .anual-head .base{font-size:11.5px;color:var(--muted);font-weight:500;letter-spacing:.3px;text-transform:none}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
+  .card .clbl{font-size:11.5px;color:var(--muted-txt);text-transform:uppercase;letter-spacing:.4px;
+    display:flex;align-items:center;gap:6px;line-height:1.3}
+  .card .cval{font-size:19px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
+  .card .cval.neg{color:#c0392b}
+  .card .lock-ic{width:12px;height:12px}
+
+  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+
+  @media(max-width:640px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .row input{width:130px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Projeção Financeira</h1>
+  <div class="sub">Simulador de tráfego pago · CPL &amp; CPA</div>
+
+  <!-- ================= PROJEÇÃO MENSAL ================= -->
+  <div class="section-title">Projeção mensal</div>
+  <div class="sheet" id="sheet"></div>
+
+  <!-- ================= PROJEÇÃO ANUAL ================= -->
+  <div class="section-title anual-head">Projeção anual <span class="base">· base: 12 meses</span></div>
+  <div class="cards" id="cards"></div>
+
+  <div class="foot">Fórmulas preservadas da planilha “Projeção Financeira – CPL e CPA”.</div>
+</div>
+
+<!-- ícone de cadeado (SVG) reutilizável -->
+<svg style="display:none"><symbol id="ic-lock" viewBox="0 0 24 24">
+  <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+  </g>
+</symbol></svg>
+
+<script>
+/* -------- Indicadores mensais (mesma ordem da planilha) -------- */
+// type: edit (preto, editável) | calc (cadeado, apagado)
+// fmt : brl | num2 | pct2 | int
+const ROWS = [
+  {key:'cpc',   label:'CPC',               type:'edit', fmt:'brl'},
+  {key:'clique',label:'Clique',            type:'calc', fmt:'num2'},
+  {key:'conv',  label:'Taxa de conversão', type:'edit', fmt:'pct2'},
+  {key:'venda', label:'Venda',             type:'calc', fmt:'int'},
+  {key:'fat',   label:'Faturamento',       type:'calc', fmt:'brl'},
+  {key:'inv',   label:'Investimento',      type:'edit', fmt:'brl', strong:true},
+  {key:'cpa',   label:'CPA / CAC',         type:'calc', fmt:'brl'},
+  {key:'lucro', label:'Lucro',             type:'calc', fmt:'brl', strong:true},
+  {key:'ticket',label:'Ticket / Preço',    type:'edit', fmt:'brl'},
+];
+
+const DEFAULT = {cpc:0.8, conv:0.002, inv:200000, ticket:2500}; // valores da planilha (M1)
+let inp = {...DEFAULT};
+
+/* -------- Formatação (pt-BR, igual à planilha) -------- */
+const brl  = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
+const num2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const int0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
+function fmt(v,t){
+  if(!isFinite(v)||isNaN(v)) return '—';
+  if(t==='brl')  return brl.format(v);
+  if(t==='num2') return num2.format(v);
+  if(t==='int')  return int0.format(Math.round(v));
+  if(t==='pct2') return num2.format(v*100)+'%';
+  if(t==='pct0') return Math.round(v*100)+'%';
+  return v;
+}
+const div=(a,b)=> b? a/b : 0;
+function parseNum(s){ s=(''+s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
+  const n=parseFloat(s); return isNaN(n)?0:n; }
+
+/* -------- Fórmulas idênticas à planilha -------- */
+function calc(i){
+  const cpc=+i.cpc||0, conv=+i.conv||0, invv=+i.inv||0, ticket=+i.ticket||0;
+  const clique = div(invv, cpc);   // = Investimento / CPC
+  const venda  = clique * conv;    // = Clique × Taxa de conversão
+  const fat    = ticket * venda;   // = Ticket × Venda
+  const cpa    = div(invv, venda); // = Investimento / Venda
+  const lucro  = fat - invv;       // = Faturamento − Investimento
+  return {cpc,clique,conv,venda,fat,inv:invv,cpa,lucro,ticket};
+}
+
+/* -------- Monta a tabela mensal -------- */
+function build(){
+  const box=document.getElementById('sheet'); box.innerHTML='';
+  ROWS.forEach(r=>{
+    const row=document.createElement('div');
+    row.className='row '+(r.type==='calc'?'locked ':'')+(r.strong?'strong':'');
+    const lock = r.type==='calc'
+      ? `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock"/></svg>` : '';
+    let right;
+    if(r.type==='edit'){
+      const raw=inp[r.key];
+      const shown = r.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
+      const unit = r.fmt==='pct2' ? '<span class="unit">%</span>'
+                 : r.fmt==='brl' ? '' : '';
+      right = `<input type="text" value="${shown}" data-key="${r.key}" data-fmt="${r.fmt}">${unit}`;
+    }else{
+      right = `<span class="val" data-out="${r.key}">—</span>`;
+    }
+    row.innerHTML=`<span class="name">${lock}${r.label}</span><span style="display:flex;align-items:center;gap:2px">${right}</span>`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll('input').forEach(el=>{
+    el.addEventListener('input',onEdit);
+    el.addEventListener('focus',e=>e.target.select());
+    el.addEventListener('blur',onBlur);
+  });
+}
+
+/* -------- Cards da projeção anual (mensal × 12) -------- */
+const ANNUAL = [
+  {key:'fat',    label:'Faturamento no ano', fmt:'brl',  mode:'sum'},
+  {key:'inv',    label:'Investimento no ano',fmt:'brl',  mode:'sum'},
+  {key:'lucro',  label:'Lucro / Saldo',      fmt:'brl',  mode:'sum', neg:true},
+  {key:'venda',  label:'Vendas no ano',      fmt:'int',  mode:'sum'},
+  {key:'clique', label:'Total de cliques',   fmt:'num2', mode:'sum'},
+  {key:'cpc',    label:'CPC médio',          fmt:'brl',  mode:'rate'},
+  {key:'conv',   label:'Taxa de conv. média',fmt:'pct0', mode:'rate'},
+  {key:'cpa',    label:'CPA médio',          fmt:'brl',  mode:'rate'},
+];
+function buildCards(){
+  const box=document.getElementById('cards'); box.innerHTML='';
+  ANNUAL.forEach(a=>{
+    const c=document.createElement('div'); c.className='card';
+    c.innerHTML=`<div class="clbl"><svg class="lock-ic" width="12" height="12"><use href="#ic-lock"/></svg>${a.label}</div>`+
+                `<div class="cval" data-card="${a.key}">—</div>`;
+    box.appendChild(c);
+  });
+}
+
+/* -------- Recalcular tudo -------- */
+function recalc(){
+  const m=calc(inp);
+  // mensal (linhas travadas)
+  ROWS.filter(r=>r.type==='calc').forEach(r=>{
+    const el=document.querySelector(`[data-out="${r.key}"]`);
+    if(el){ el.textContent=fmt(m[r.key],r.fmt);
+      if(r.key==='lucro') el.classList.toggle('neg', m.lucro<0); }
+  });
+  // anual = 12×  (rates permanecem iguais ao mês)
+  ANNUAL.forEach(a=>{
+    const el=document.querySelector(`[data-card="${a.key}"]`);
+    if(!el) return;
+    const v = a.mode==='sum' ? m[a.key]*12 : m[a.key];
+    el.textContent=fmt(v,a.fmt);
+    if(a.neg) el.classList.toggle('neg', v<0);
+  });
+}
+
+function onEdit(e){
+  let v=parseNum(e.target.value);
+  if(e.target.dataset.fmt==='pct2') v=v/100;
+  inp[e.target.dataset.key]=v; recalc();
+}
+function onBlur(e){
+  const raw=inp[e.target.dataset.key];
+  e.target.value = e.target.dataset.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
+}
+
+build(); buildCards(); recalc();
+</script>
+</body>
+</html>
