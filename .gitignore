@@ -1,4 +1,8 @@
 .claude/
 *.xlsx
+*.sql
 node_modules/
 .vercel/
+
+.vercel
+.env*
