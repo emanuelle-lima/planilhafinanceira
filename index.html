@@ -7,45 +7,62 @@
 <style>
   :root{
     --bg:#f7f8fa; --panel:#ffffff; --line:#eceef1;
-    --ink:#1c2430;         /* preto dos editáveis */
-    --muted:#98a1af;       /* cadeado / travados apagados */
-    --muted-txt:#8a929f;
-    --accent:#3b6fd4;
+    --ink:#1c2430; --muted:#98a1af; --muted-txt:#8a929f;
+    --accent:#3b6fd4; --accent-soft:#eaf0fb;
+    --ok:#2f9e63; --err:#c0392b;
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
     background:var(--bg);color:var(--ink);padding:40px 20px 64px}
   .wrap{max-width:760px;margin:0 auto}
-
   h1{font-size:24px;margin:0;font-weight:700;letter-spacing:.2px}
   .sub{font-size:14px;color:var(--muted-txt);margin-top:6px}
+  .adm-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;color:#fff;
+    background:var(--accent);padding:2px 8px;border-radius:6px;vertical-align:middle;margin-left:8px}
+
+  /* Tabs */
+  .tabs{display:inline-flex;background:#eef0f3;border-radius:11px;padding:4px;margin:20px 0 6px;gap:4px}
+  .tabs button{font-family:inherit;font-size:13.5px;font-weight:600;border:0;background:transparent;
+    color:var(--muted-txt);padding:8px 18px;border-radius:8px;cursor:pointer;transition:.15s}
+  .tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,30,50,.10)}
 
   .section-title{font-size:12.5px;color:var(--muted-txt);font-weight:700;letter-spacing:1.2px;
-    text-transform:uppercase;margin:34px 0 12px}
+    text-transform:uppercase;margin:30px 0 12px}
 
-  /* ---------- Projeção mensal (tabela leve, 1 coluna) ---------- */
+  /* Sheet */
   .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-  .row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:48px}
+  .row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;min-height:48px;gap:12px}
   .row + .row{border-top:1px solid var(--line)}
   .row .name{display:flex;align-items:center;gap:9px;font-size:14px}
   .row.locked .name{color:var(--muted-txt)}
   .row.strong .name{font-weight:600;color:var(--ink)}
   .lock-ic{color:var(--muted);flex:none}
-
   .val{font-size:14.5px;font-variant-numeric:tabular-nums;text-align:right}
   .row.locked .val{color:var(--muted-txt)}
   .row.strong .val{font-weight:700}
-  .val.neg{color:#c0392b}
-
-  /* input editável: texto preto, campo discreto */
+  .val.neg{color:var(--err)}
   .row input{width:150px;text-align:right;font-family:inherit;font-size:14.5px;font-weight:600;
     font-variant-numeric:tabular-nums;color:var(--ink);background:#fff;
     border:1px solid #dfe3e9;border-radius:8px;padding:7px 10px;transition:.12s}
   .row input:hover{border-color:#c3c9d2}
   .row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
-  .unit{color:var(--muted);font-size:12.5px;margin-left:2px}
+  .unit{color:var(--muted);font-size:12.5px}
 
-  /* ---------- Projeção anual (cards) ---------- */
+  /* Info icon + tooltip */
+  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;
+    width:17px;height:17px;border-radius:50%;border:1.3px solid #c4ccd6;color:#a6aeba;
+    font-size:11px;font-weight:700;font-style:italic;cursor:help;flex:none;font-family:Georgia,serif;line-height:1}
+  .info:hover,.info:focus{border-color:var(--accent);color:var(--accent);outline:none}
+  .info .tip{position:absolute;bottom:calc(100% + 9px);left:50%;transform:translateX(-50%) translateY(4px);
+    width:250px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
+    box-shadow:0 8px 26px rgba(24,32,48,.14);opacity:0;visibility:hidden;transition:.16s;z-index:20;text-align:left}
+  .info:hover .tip,.info:focus .tip{opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+  .info .tip::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);
+    border:6px solid transparent;border-top-color:#fff}
+  .tip-desc{display:block;font-size:12.5px;color:var(--ink);font-weight:500;font-style:normal;line-height:1.5}
+  .tip-ref{display:block;font-size:11.5px;color:#b8c0cc;font-weight:400;font-style:normal;margin-top:7px;line-height:1.4}
+
+  /* Cards (anual) */
   .anual-head{display:flex;align-items:baseline;gap:10px}
   .anual-head .base{font-size:11.5px;color:var(--muted);font-weight:500;letter-spacing:.3px;text-transform:none}
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
@@ -53,61 +70,79 @@
   .card .clbl{font-size:11.5px;color:var(--muted-txt);text-transform:uppercase;letter-spacing:.4px;
     display:flex;align-items:center;gap:6px;line-height:1.3}
   .card .cval{font-size:19px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
-  .card .cval.neg{color:#c0392b}
+  .card .cval.neg{color:var(--err)}
   .card .lock-ic{width:12px;height:12px}
 
-  .foot{text-align:center;color:var(--muted);font-size:12px;margin-top:30px}
+  /* Admin */
+  .login{max-width:360px;margin:60px auto 0;background:#fff;border:1px solid var(--line);
+    border-radius:16px;padding:26px 24px;text-align:center}
+  .login h2{font-size:17px;margin:0 0 4px}
+  .login p{font-size:13px;color:var(--muted-txt);margin:0 0 18px}
+  .login input{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid #dfe3e9;
+    border-radius:9px;text-align:center}
+  .login input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:9px;
+    background:var(--accent);color:#fff;padding:11px 18px;transition:.12s;width:100%;margin-top:12px}
+  .btn:hover{filter:brightness(1.06)} .btn:disabled{opacity:.6;cursor:default}
+  .btn.small{width:auto;padding:9px 20px;margin-top:0}
+  .msg{font-size:13px;margin-top:12px;min-height:18px}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
 
-  @media(max-width:640px){
-    .cards{grid-template-columns:repeat(2,1fr)}
-    .row input{width:130px}
-  }
+  .adm-tab{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:20px}
+  .adm-tab h3{margin:0 0 4px;font-size:16px}
+  .adm-tab .hint{font-size:12.5px;color:var(--muted-txt);margin:0 0 16px}
+  .adm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .fld label{display:block;font-size:12px;color:var(--muted-txt);margin-bottom:5px;font-weight:600}
+  .fld .in{display:flex;align-items:center;gap:6px;border:1px solid #dfe3e9;border-radius:9px;padding:0 10px;background:#fff}
+  .fld .in:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
+  .fld .in span{color:var(--muted);font-size:12.5px}
+  .fld input{flex:1;border:0;outline:0;font-family:inherit;font-size:14.5px;font-weight:600;padding:9px 0;
+    font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;background:transparent}
+  .preview{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
+  .preview .pr{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--muted-txt)}
+  .preview .pr b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+  .adm-save{display:flex;align-items:center;gap:14px;margin-top:16px}
 </style>
 </head>
 <body>
-<div class="wrap">
+<div class="wrap" id="app"></div>
 
-  <h1>Projeção Financeira</h1>
-  <div class="sub">Simulador de tráfego pago · CPL &amp; CPA</div>
-
-  <!-- ================= PROJEÇÃO MENSAL ================= -->
-  <div class="section-title">Projeção mensal</div>
-  <div class="sheet" id="sheet"></div>
-
-  <!-- ================= PROJEÇÃO ANUAL ================= -->
-  <div class="section-title anual-head">Projeção anual <span class="base">· base: 12 meses</span></div>
-  <div class="cards" id="cards"></div>
-
-  <div class="foot">Fórmulas preservadas da planilha “Projeção Financeira – CPL e CPA”.</div>
-</div>
-
-<!-- ícone de cadeado (SVG) reutilizável -->
 <svg style="display:none"><symbol id="ic-lock" viewBox="0 0 24 24">
   <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
     <rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>
   </g>
 </symbol></svg>
 
-<script>
-/* -------- Indicadores mensais (mesma ordem da planilha) -------- */
-// type: edit (preto, editável) | calc (cadeado, apagado)
-// fmt : brl | num2 | pct2 | int
-const ROWS = [
-  {key:'cpc',   label:'CPC',               type:'edit', fmt:'brl'},
-  {key:'clique',label:'Clique',            type:'calc', fmt:'num2'},
-  {key:'conv',  label:'Taxa de conversão', type:'edit', fmt:'pct2'},
-  {key:'venda', label:'Venda',             type:'calc', fmt:'int'},
-  {key:'fat',   label:'Faturamento',       type:'calc', fmt:'brl'},
-  {key:'inv',   label:'Investimento',      type:'edit', fmt:'brl', strong:true},
-  {key:'cpa',   label:'CPA / CAC',         type:'calc', fmt:'brl'},
-  {key:'lucro', label:'Lucro',             type:'calc', fmt:'brl', strong:true},
-  {key:'ticket',label:'Ticket / Preço',    type:'edit', fmt:'brl'},
-];
+<script type="module">
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-const DEFAULT = {cpc:0.8, conv:0.002, inv:200000, ticket:2500}; // valores da planilha (M1)
-let inp = {...DEFAULT};
+/* ================= Supabase ================= */
+const SB_URL = 'https://iajamwjrmlnfdgfdrptl.supabase.co';
+const SB_KEY = 'sb_publishable_9H21X1OwI_DXQAGpat37Bg_3AsLZEXW';
+const sb = createClient(SB_URL, SB_KEY);
 
-/* -------- Formatação (pt-BR, igual à planilha) -------- */
+const IS_ADMIN = location.hostname.includes('-adm')
+              || new URLSearchParams(location.search).has('admin');
+
+/* ============ Valores padrão (fallback se o backend ainda não estiver pronto) ============ */
+const FALLBACK = {
+  mid: {cpc:0.8, conv:0.002, ticket:2500, investimento:200000},
+  low: {cpc:0.8, conv:0.06,  ticket:97,   investimento:200000},
+};
+let CONFIG = structuredClone(FALLBACK);
+
+async function loadConfig(){
+  try{
+    const {data,error} = await sb.from('config').select('*');
+    if(error) throw error;
+    (data||[]).forEach(r=>{
+      if(CONFIG[r.tab]) CONFIG[r.tab] =
+        {cpc:+r.cpc, conv:+r.conv, ticket:+r.ticket, investimento:+r.investimento};
+    });
+  }catch(e){ console.warn('Usando valores padrão (backend indisponível):', e.message||e); }
+}
+
+/* ================= Formatação (pt-BR) ================= */
 const brl  = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
 const num2 = new Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const int0 = new Intl.NumberFormat('pt-BR',{maximumFractionDigits:0});
@@ -120,100 +155,276 @@ function fmt(v,t){
   if(t==='pct0') return Math.round(v*100)+'%';
   return v;
 }
-const div=(a,b)=> b? a/b : 0;
+const dv=(a,b)=> b? a/b : 0;
 function parseNum(s){ s=(''+s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
   const n=parseFloat(s); return isNaN(n)?0:n; }
 
-/* -------- Fórmulas idênticas à planilha -------- */
-function calc(i){
-  const cpc=+i.cpc||0, conv=+i.conv||0, invv=+i.inv||0, ticket=+i.ticket||0;
-  const clique = div(invv, cpc);   // = Investimento / CPC
-  const venda  = clique * conv;    // = Clique × Taxa de conversão
-  const fat    = ticket * venda;   // = Ticket × Venda
-  const cpa    = div(invv, venda); // = Investimento / Venda
-  const lucro  = fat - invv;       // = Faturamento − Investimento
-  return {cpc,clique,conv,venda,fat,inv:invv,cpa,lucro,ticket};
+/* ================= Fórmulas (idênticas à planilha) ================= */
+function calc(v){
+  const cpc=+v.cpc||0, conv=+v.conv||0, inv=+v.investimento||0, ticket=+v.ticket||0;
+  const clique = dv(inv, cpc);   // Investimento / CPC
+  const venda  = clique*conv;    // Clique × Taxa de conversão
+  const fat    = ticket*venda;   // Ticket × Venda
+  const cpa    = dv(inv, venda); // Investimento / Venda
+  const lucro  = fat-inv;        // Faturamento − Investimento
+  return {cpc,clique,conv,venda,fat,inv,cpa,lucro,ticket};
 }
 
-/* -------- Monta a tabela mensal -------- */
-function build(){
+/* ================= Metadados ================= */
+const INFO = {
+  cpc:    {desc:'É o valor pago cada vez que um usuário clica no seu anúncio.',
+           ref:'Referência de mercado: abaixo de R$ 3,00'},
+  cpa:    {desc:'Quanto foi investido em anúncios para conseguir uma venda / cliente.',
+           ref:''},
+  ticket: {desc:'É o preço do seu produto / oferta.',
+           ref:'Low ticket: R$ 37 a R$ 97  ·  Mid ticket: R$ 197 a R$ 497'},
+};
+function infoIcon(key){
+  const i=INFO[key]; if(!i) return '';
+  return `<span class="info" tabindex="0">i<span class="tip">`+
+    `<span class="tip-desc">${i.desc}</span>`+
+    (i.ref?`<span class="tip-ref">${i.ref}</span>`:'')+`</span></span>`;
+}
+const lockSvg = `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock"/></svg>`;
+
+// kind: bench (travado, definido pelo admin) | calc (fórmula) | input (usuário edita)
+const ROWS = [
+  {key:'cpc',   label:'CPC',               kind:'bench', fmt:'brl',  info:'cpc'},
+  {key:'clique',label:'Clique',            kind:'calc',  fmt:'num2'},
+  {key:'conv',  label:'Taxa de conversão', kind:'bench', fmt:'pct2'},
+  {key:'venda', label:'Venda',             kind:'calc',  fmt:'int'},
+  {key:'fat',   label:'Faturamento',       kind:'calc',  fmt:'brl'},
+  {key:'inv',   label:'Investimento',      kind:'input', fmt:'brl',  strong:true},
+  {key:'cpa',   label:'CPA / CAC',         kind:'calc',  fmt:'brl',  info:'cpa'},
+  {key:'lucro', label:'Lucro',             kind:'calc',  fmt:'brl',  strong:true},
+  {key:'ticket',label:'Ticket / Preço',    kind:'bench', fmt:'brl',  info:'ticket'},
+];
+const ANNUAL = [
+  {key:'fat',    label:'Faturamento no ano', fmt:'brl',  sum:true},
+  {key:'inv',    label:'Investimento no ano',fmt:'brl',  sum:true},
+  {key:'lucro',  label:'Lucro / Saldo',      fmt:'brl',  sum:true, neg:true},
+  {key:'venda',  label:'Vendas no ano',      fmt:'int',  sum:true},
+  {key:'clique', label:'Total de cliques',   fmt:'num2', sum:true},
+  {key:'cpc',    label:'CPC médio',          fmt:'brl'},
+  {key:'conv',   label:'Taxa de conv. média',fmt:'pct0'},
+  {key:'cpa',    label:'CPA médio',          fmt:'brl'},
+];
+
+const app = document.getElementById('app');
+
+/* =======================================================================
+   PÁGINA PRINCIPAL
+======================================================================= */
+let curTab='mid', work={};
+
+function renderMain(){
+  app.innerHTML =
+    `<h1>Projeção Financeira</h1>
+     <div class="sub">Simulador de tráfego pago · CPL &amp; CPA</div>
+     <div class="tabs" id="tabs">
+       <button data-tab="mid">Mid Ticket</button>
+       <button data-tab="low">Low Ticket</button>
+     </div>
+     <div class="section-title">Projeção mensal</div>
+     <div class="sheet" id="sheet"></div>
+     <div class="section-title anual-head">Projeção anual <span class="base">· base: 12 meses</span></div>
+     <div class="cards" id="cards"></div>`;
+
+  app.querySelectorAll('#tabs button').forEach(b=>
+    b.addEventListener('click',()=>selectTab(b.dataset.tab)));
+  buildCards();
+  selectTab('mid');
+}
+
+function selectTab(tab){
+  curTab=tab;
+  work={...CONFIG[tab]};
+  app.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
+  buildSheet();
+  recalcMain();
+}
+
+function buildSheet(){
   const box=document.getElementById('sheet'); box.innerHTML='';
   ROWS.forEach(r=>{
+    const locked = r.kind!=='input';
     const row=document.createElement('div');
-    row.className='row '+(r.type==='calc'?'locked ':'')+(r.strong?'strong':'');
-    const lock = r.type==='calc'
-      ? `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock"/></svg>` : '';
+    row.className='row '+(locked?'locked ':'')+(r.strong?'strong':'');
+    const lock = locked ? lockSvg : '';
+    const info = r.info ? infoIcon(r.info) : '';
     let right;
-    if(r.type==='edit'){
-      const raw=inp[r.key];
-      const shown = r.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
-      const unit = r.fmt==='pct2' ? '<span class="unit">%</span>'
-                 : r.fmt==='brl' ? '' : '';
-      right = `<input type="text" value="${shown}" data-key="${r.key}" data-fmt="${r.fmt}">${unit}`;
+    if(r.kind==='input'){
+      right=`<span style="display:flex;align-items:center;gap:2px">
+        <input type="text" value="${num2.format(work.investimento)}" id="inp-inv"></span>`;
     }else{
-      right = `<span class="val" data-out="${r.key}">—</span>`;
+      right=`<span class="val" data-out="${r.key}">—</span>`;
     }
-    row.innerHTML=`<span class="name">${lock}${r.label}</span><span style="display:flex;align-items:center;gap:2px">${right}</span>`;
+    row.innerHTML=`<span class="name">${lock}${r.label}${info}</span>${right}`;
     box.appendChild(row);
   });
-  box.querySelectorAll('input').forEach(el=>{
-    el.addEventListener('input',onEdit);
-    el.addEventListener('focus',e=>e.target.select());
-    el.addEventListener('blur',onBlur);
-  });
+  const inv=document.getElementById('inp-inv');
+  inv.addEventListener('input',()=>{ work.investimento=parseNum(inv.value); recalcMain(); });
+  inv.addEventListener('focus',e=>e.target.select());
+  inv.addEventListener('blur',()=> inv.value=num2.format(work.investimento));
 }
 
-/* -------- Cards da projeção anual (mensal × 12) -------- */
-const ANNUAL = [
-  {key:'fat',    label:'Faturamento no ano', fmt:'brl',  mode:'sum'},
-  {key:'inv',    label:'Investimento no ano',fmt:'brl',  mode:'sum'},
-  {key:'lucro',  label:'Lucro / Saldo',      fmt:'brl',  mode:'sum', neg:true},
-  {key:'venda',  label:'Vendas no ano',      fmt:'int',  mode:'sum'},
-  {key:'clique', label:'Total de cliques',   fmt:'num2', mode:'sum'},
-  {key:'cpc',    label:'CPC médio',          fmt:'brl',  mode:'rate'},
-  {key:'conv',   label:'Taxa de conv. média',fmt:'pct0', mode:'rate'},
-  {key:'cpa',    label:'CPA médio',          fmt:'brl',  mode:'rate'},
-];
 function buildCards(){
   const box=document.getElementById('cards'); box.innerHTML='';
   ANNUAL.forEach(a=>{
     const c=document.createElement('div'); c.className='card';
-    c.innerHTML=`<div class="clbl"><svg class="lock-ic" width="12" height="12"><use href="#ic-lock"/></svg>${a.label}</div>`+
+    c.innerHTML=`<div class="clbl">${lockSvg.replace('14','12').replace('14','12')}${a.label}</div>`+
                 `<div class="cval" data-card="${a.key}">—</div>`;
     box.appendChild(c);
   });
 }
 
-/* -------- Recalcular tudo -------- */
-function recalc(){
-  const m=calc(inp);
-  // mensal (linhas travadas)
-  ROWS.filter(r=>r.type==='calc').forEach(r=>{
+function recalcMain(){
+  const m=calc(work);
+  ROWS.filter(r=>r.kind!=='input').forEach(r=>{
     const el=document.querySelector(`[data-out="${r.key}"]`);
     if(el){ el.textContent=fmt(m[r.key],r.fmt);
-      if(r.key==='lucro') el.classList.toggle('neg', m.lucro<0); }
+      if(r.key==='lucro') el.classList.toggle('neg',m.lucro<0); }
   });
-  // anual = 12×  (rates permanecem iguais ao mês)
   ANNUAL.forEach(a=>{
     const el=document.querySelector(`[data-card="${a.key}"]`);
     if(!el) return;
-    const v = a.mode==='sum' ? m[a.key]*12 : m[a.key];
+    const v=a.sum? m[a.key]*12 : m[a.key];
     el.textContent=fmt(v,a.fmt);
-    if(a.neg) el.classList.toggle('neg', v<0);
+    if(a.neg) el.classList.toggle('neg',v<0);
   });
 }
 
-function onEdit(e){
-  let v=parseNum(e.target.value);
-  if(e.target.dataset.fmt==='pct2') v=v/100;
-  inp[e.target.dataset.key]=v; recalc();
-}
-function onBlur(e){
-  const raw=inp[e.target.dataset.key];
-  e.target.value = e.target.dataset.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
+/* =======================================================================
+   PÁGINA ADMIN
+======================================================================= */
+let adminPass=null;
+const admState={};
+
+function renderAdminLogin(){
+  app.innerHTML=
+    `<h1>Projeção Financeira <span class="adm-badge">ADMIN</span></h1>
+     <div class="sub">Área restrita — defina os valores travados exibidos na página principal.</div>
+     <div class="login">
+       <h2>Acesso restrito</h2>
+       <p>Digite a senha de administrador</p>
+       <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+       <button class="btn" id="enter">Entrar</button>
+       <div class="msg" id="loginMsg"></div>
+     </div>`;
+  const pass=document.getElementById('pass');
+  const msg=document.getElementById('loginMsg');
+  const enter=document.getElementById('enter');
+  async function tryLogin(){
+    const val=pass.value.trim();
+    if(!val) return;
+    enter.disabled=true; msg.className='msg'; msg.textContent='Verificando…';
+    try{
+      const {data,error}=await sb.rpc('check_password',{p_password:val});
+      if(error) throw error;
+      if(data===true){ adminPass=val; await loadConfig(); renderAdminPanel(); return; }
+      msg.className='msg err'; msg.textContent='Senha incorreta.';
+    }catch(e){
+      msg.className='msg err';
+      msg.textContent='Backend não configurado ainda. Rode o SQL no Supabase.';
+      console.warn(e);
+    }
+    enter.disabled=false;
+  }
+  enter.addEventListener('click',tryLogin);
+  pass.addEventListener('keydown',e=>{ if(e.key==='Enter') tryLogin(); });
+  pass.focus();
 }
 
-build(); buildCards(); recalc();
+function renderAdminPanel(){
+  app.innerHTML=
+    `<h1>Projeção Financeira <span class="adm-badge">ADMIN</span></h1>
+     <div class="sub">Edite os valores travados (CPC, Taxa de conversão, Ticket e Investimento padrão).
+       Ao salvar, eles passam a valer para todos na página principal.</div>
+     <div id="admTabs"></div>`;
+  const host=document.getElementById('admTabs');
+  ['mid','low'].forEach(tab=>{
+    admState[tab]={...CONFIG[tab]};
+    host.appendChild(buildAdminTab(tab));
+  });
+}
+
+const TAB_NAME={mid:'Mid Ticket', low:'Low Ticket'};
+
+function buildAdminTab(tab){
+  const wrap=document.createElement('div'); wrap.className='adm-tab';
+  wrap.innerHTML=
+    `<h3>${TAB_NAME[tab]}</h3>
+     <p class="hint">Valores exibidos e travados nesta guia da página principal.</p>
+     <div class="adm-grid">
+       ${fld(tab,'cpc','CPC','R$')}
+       ${fld(tab,'conv','Taxa de conversão','','%')}
+       ${fld(tab,'ticket','Ticket / Preço','R$')}
+       ${fld(tab,'investimento','Investimento padrão','R$')}
+     </div>
+     <div class="preview" id="prev-${tab}"></div>
+     <div class="adm-save">
+       <button class="btn small" data-save="${tab}">Salvar</button>
+       <span class="msg" id="msg-${tab}"></span>
+     </div>`;
+  // liga inputs
+  setTimeout(()=>{
+    wrap.querySelectorAll('input').forEach(inp=>{
+      inp.addEventListener('input',()=>{
+        let v=parseNum(inp.value);
+        if(inp.dataset.k==='conv') v=v/100;
+        admState[tab][inp.dataset.k]=v;
+        renderAdminPreview(tab);
+      });
+      inp.addEventListener('focus',e=>e.target.select());
+    });
+    wrap.querySelector(`[data-save="${tab}"]`).addEventListener('click',()=>saveTab(tab));
+    renderAdminPreview(tab);
+  });
+  return wrap;
+}
+function fld(tab,k,label,pre,suf){
+  const raw=CONFIG[tab][k];
+  const shown = k==='conv' ? num2.format(raw*100) : num2.format(raw);
+  return `<div class="fld"><label>${label}</label>
+    <div class="in">${pre?`<span>${pre}</span>`:''}
+      <input type="text" data-k="${k}" value="${shown}">${suf?`<span>${suf}</span>`:''}</div></div>`;
+}
+function renderAdminPreview(tab){
+  const m=calc(admState[tab]);
+  const box=document.getElementById('prev-'+tab); if(!box) return;
+  const line=(l,v)=>`<div class="pr"><span>${l}</span><b>${v}</b></div>`;
+  box.innerHTML=
+    line('Clique', fmt(m.clique,'num2'))+
+    line('Venda',  fmt(m.venda,'int'))+
+    line('Faturamento', fmt(m.fat,'brl'))+
+    line('CPA / CAC', fmt(m.cpa,'brl'))+
+    line('Lucro', fmt(m.lucro,'brl'))+
+    line('Faturamento no ano (×12)', fmt(m.fat*12,'brl'))+
+    line('Lucro no ano (×12)', fmt(m.lucro*12,'brl'));
+}
+async function saveTab(tab){
+  const v=admState[tab];
+  const btn=document.querySelector(`[data-save="${tab}"]`);
+  const msg=document.getElementById('msg-'+tab);
+  btn.disabled=true; msg.className='msg'; msg.textContent='Salvando…';
+  try{
+    const {error}=await sb.rpc('update_config',{
+      p_password:adminPass, p_tab:tab,
+      p_cpc:v.cpc, p_conv:v.conv, p_ticket:v.ticket, p_investimento:v.investimento});
+    if(error) throw error;
+    CONFIG[tab]={...v};
+    msg.className='msg ok'; msg.textContent='✓ Salvo — já vale na página principal.';
+  }catch(e){
+    msg.className='msg err'; msg.textContent='Erro ao salvar: '+(e.message||e);
+  }
+  btn.disabled=false;
+}
+
+/* ================= Início ================= */
+(async ()=>{
+  if(IS_ADMIN){ renderAdminLogin(); }
+  else { await loadConfig(); renderMain(); }
+})();
 </script>
 </body>
 </html>
