@@ -315,14 +315,19 @@ function buildSheet(){
     let right;
     if(isInput){
       const isTicket = r.key==='ticket';
-      const enabled  = filled || isTicket;         // antes de preencher o ticket, só ele fica ativo
-      const raw = work[wkeyOf(r.key)];
-      const hasVal = (isTicket ? raw>0 : filled) && raw!=='' && raw!=null;
-      const shown = hasVal ? (r.fmt==='pct2'?num2.format(raw*100):num2.format(raw)) : '';
-      const unit  = r.fmt==='pct2' ? '<span class="unit">%</span>' : '';
-      const attrs = (enabled?'':'disabled ')+(isTicket?'placeholder="valor do produto"':'');
-      right=`<span style="display:flex;align-items:center;gap:5px">`+
-        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}" ${attrs}>${unit}</span>`;
+      const asInput  = isTicket || filled;          // ticket sempre; os demais só após preencher
+      if(asInput){
+        const raw = work[wkeyOf(r.key)];
+        const hasVal = (isTicket ? raw>0 : filled) && raw!=='' && raw!=null;
+        const shown = hasVal ? (r.fmt==='pct2'?num2.format(raw*100):num2.format(raw)) : '';
+        const pre = r.fmt==='brl'  ? '<span class="unit">R$</span>' : '';
+        const suf = r.fmt==='pct2' ? '<span class="unit">%</span>'  : '';
+        const ph  = isTicket ? 'placeholder="0,00"' : '';
+        right=`<span style="display:flex;align-items:center;gap:6px">${pre}`+
+          `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}" ${ph}>${suf}</span>`;
+      }else{
+        right=`<span class="val" data-out="${r.key}" style="color:var(--text-muted)">—</span>`;
+      }
     }else{
       right=`<span class="val" data-out="${r.key}">—</span>`;
     }
