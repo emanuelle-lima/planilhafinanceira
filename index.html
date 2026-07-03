@@ -127,6 +127,33 @@
   .adm-tab .cards{padding:0 22px}
   .adm-save{display:flex;align-items:center;gap:14px;padding:16px 22px 0}
 
+  /* Admin: tabela Nome | Valor padrão | lápis */
+  .adm-sheet{border-top:1px solid var(--border)}
+  .adm-row{display:grid;grid-template-columns:1fr 165px 46px;align-items:center;gap:10px;min-height:52px;padding:0 22px}
+  .adm-row + .adm-row{border-top:1px solid var(--border)}
+  .adm-head{min-height:38px;color:var(--text-subtle);font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .adm-head span:nth-child(2){text-align:right}
+  .adm-row .c-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .adm-row .c-val{text-align:right}
+  .adm-row .c-act{display:flex;justify-content:center}
+  .adm-nm{font-size:14px;color:var(--text-color)}
+  .adm-row.strong .adm-nm{font-weight:600}
+  .adm-vl{font-size:14px;color:var(--text-color);font-variant-numeric:tabular-nums}
+  .adm-vl.calc{color:var(--text-muted)}
+  .adm-row.strong .adm-vl{font-weight:700}
+  .adm-vl.neg{color:var(--error-color)}
+  .nm-in{width:100%;font-family:inherit;font-size:14px;padding:7px 9px;border:1px solid var(--border);
+    border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-color)}
+  .nm-in:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
+  .val-edit{display:flex;align-items:center;justify-content:flex-end;gap:5px}
+  .vl-in{width:106px;text-align:right;font-family:inherit;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
+    padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-color)}
+  .vl-in:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
+  .pencil-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;
+    border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:var(--speed)}
+  .pencil-btn:hover{border-color:var(--highlight-strong);color:var(--highlight-strong)}
+  .pencil-btn.on{background:var(--highlight);border-color:var(--highlight);color:var(--on-highlight)}
+
   @media(max-width:640px){
     .cards{grid-template-columns:repeat(2,1fr)}
     .hero-inner,.container{padding-left:16px;padding-right:16px}
@@ -160,6 +187,7 @@ const FALLBACK = {
   low: {cpc:0.8, conv:0.06,  ticket:97,  investimento:200000},
 };
 let CONFIG = structuredClone(FALLBACK);
+let LABELS = {};   // key → nome personalizado (backend)
 
 async function loadConfig(){
   try{
@@ -171,6 +199,14 @@ async function loadConfig(){
     });
   }catch(e){ console.warn('Usando valores padrão (backend indisponível):', e.message||e); }
 }
+async function loadLabels(){
+  try{
+    const {data,error} = await sb.from('labels').select('*');
+    if(error) throw error;
+    (data||[]).forEach(row=>{ if(row&&row.key) LABELS[row.key]=row.label; });
+  }catch(e){ console.warn('Nomes personalizados indisponíveis (usando padrão):', e.message||e); }
+}
+function labelFor(r){ return (LABELS[r.key]!=null && LABELS[r.key]!=='') ? LABELS[r.key] : r.label; }
 
 /* ================= Formatação (pt-BR) ================= */
 const brl  = new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'});
@@ -331,7 +367,7 @@ function buildSheet(){
     }else{
       right=`<span class="val" data-out="${r.key}">—</span>`;
     }
-    row.innerHTML=`<span class="name">${lock}${r.label}${info}</span>${right}`;
+    row.innerHTML=`<span class="name">${lock}${labelFor(r)}${info}</span>${right}`;
     box.appendChild(row);
   });
   box.querySelectorAll('.row input').forEach(inp=>{
@@ -446,7 +482,7 @@ function renderAdminLogin(){
     try{
       const {data,error}=await sb.rpc('check_password',{p_password:val});
       if(error) throw error;
-      if(data===true){ adminPass=val; await loadConfig(); renderAdminPanel(); return; }
+      if(data===true){ adminPass=val; await Promise.all([loadConfig(),loadLabels()]); renderAdminPanel(); return; }
       msg.className='msg err'; msg.textContent='Senha incorreta.';
     }catch(e){
       msg.className='msg err';
@@ -476,66 +512,112 @@ function renderAdminPanel(){
   });
 }
 
+let editing=null;   // 'tab:key' da linha em edição (uma por vez)
+const pencilSvg=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>`;
+const checkSvg =`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`;
+
 function buildAdminTab(tab){
   const wrap=document.createElement('div'); wrap.className='adm-tab';
   wrap.innerHTML=
     `<h3>${TAB_NAME[tab]}</h3>
-     <p class="hint">Campos de entrada editáveis; os demais são resultado das fórmulas.</p>
-     <div class="sheet" data-sheet="${tab}"></div>
+     <div class="sheet adm-sheet" data-sheet="${tab}"></div>
      <div class="block-label" style="margin:20px 0 12px">Projeção anual <span>· 12 meses</span></div>
      <div class="cards" data-cards="${tab}"></div>
-     <div class="adm-save">
-       <button class="btn small" data-save="${tab}">Salvar</button>
-       <span class="msg" id="msg-${tab}"></span>
-     </div>`;
-  setTimeout(()=>{
-    buildAdminSheet(tab);
-    wrap.querySelector(`[data-save="${tab}"]`).addEventListener('click',()=>saveTab(tab));
-  });
+     <div class="msg" id="amsg-${tab}" style="padding:12px 22px 0"></div>`;
+  setTimeout(()=>buildAdminSheet(tab));
   return wrap;
 }
 
 function buildAdminSheet(tab){
   const box=document.querySelector(`[data-sheet="${tab}"]`); if(!box) return;
   box.innerHTML='';
+  const head=document.createElement('div'); head.className='adm-row adm-head';
+  head.innerHTML=`<span>Nome</span><span>Valor padrão</span><span></span>`;
+  box.appendChild(head);
+
   ROWS.forEach(r=>{
-    const isInput=r.kind==='input';
-    const row=document.createElement('div');
-    row.className='row '+(!isInput?'locked ':'')+(r.strong?'strong':'');
-    const lock=!isInput?lockSvg:'';
-    const info=r.info?infoIcon(r.info):'';
-    let right;
+    const isEditing = editing===`${tab}:${r.key}`;
+    const isInput   = r.kind==='input';
+    const row=document.createElement('div'); row.className='adm-row'+(r.strong?' strong':'');
+
+    const nameCell = isEditing
+      ? `<input class="nm-in" data-k="${r.key}" value="${labelFor(r).replace(/"/g,'&quot;')}">`
+      : `<span class="adm-nm">${labelFor(r)}</span>`;
+
+    let valCell;
     if(isInput){
-      const raw=admState[tab][wkeyOf(r.key)];
-      const shown=r.fmt==='pct2'?num2.format(raw*100):num2.format(raw);
-      const unit =r.fmt==='pct2'?'<span class="unit">%</span>':'';
-      right=`<span style="display:flex;align-items:center;gap:5px">`+
-        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}">${unit}</span>`;
+      if(isEditing){
+        const raw=admState[tab][wkeyOf(r.key)];
+        const shown=r.fmt==='pct2'?num2.format(raw*100):num2.format(raw);
+        const pre=r.fmt==='brl'?'<span class="unit">R$</span>':'';
+        const suf=r.fmt==='pct2'?'<span class="unit">%</span>':'';
+        valCell=`<span class="val-edit">${pre}<input class="vl-in" data-k="${r.key}" data-fmt="${r.fmt}" value="${shown}">${suf}</span>`;
+      }else{
+        const raw=admState[tab][wkeyOf(r.key)];
+        const disp=r.fmt==='brl'?brl.format(raw):(r.fmt==='pct2'?num2.format(raw*100)+'%':num2.format(raw));
+        valCell=`<span class="adm-vl">${disp}</span>`;
+      }
     }else{
-      right=`<span class="val" data-aout="${tab}-${r.key}">—</span>`;
+      valCell=`<span class="adm-vl calc" data-aout="${tab}-${r.key}">—</span>`;
     }
-    row.innerHTML=`<span class="name">${lock}${r.label}${info}</span>${right}`;
+
+    const pencil=`<button class="pencil-btn${isEditing?' on':''}" data-edit="${tab}:${r.key}" title="${isEditing?'Salvar':'Editar'}">${isEditing?checkSvg:pencilSvg}</button>`;
+    row.innerHTML=`<span class="c-name">${nameCell}</span><span class="c-val">${valCell}</span><span class="c-act">${pencil}</span>`;
     box.appendChild(row);
   });
-  box.querySelectorAll('input').forEach(inp=>{
+
+  box.querySelectorAll('.pencil-btn').forEach(b=>b.addEventListener('click',()=>togglePencil(b.dataset.edit)));
+  box.querySelectorAll('.vl-in').forEach(inp=>{
     inp.addEventListener('input',()=>{
-      const f=inp.dataset.fmt; let v=parseNum(inp.value); if(f==='pct2') v=v/100;
-      admState[tab][wkeyOf(inp.dataset.rkey)]=v; recalcAdmin(tab);
+      let v=parseNum(inp.value); if(inp.dataset.fmt==='pct2') v=v/100;
+      admState[tab][wkeyOf(inp.dataset.k)]=v; recalcAdmin(tab);
     });
     inp.addEventListener('focus',e=>e.target.select());
-    inp.addEventListener('blur',()=>{
-      const f=inp.dataset.fmt, raw=admState[tab][wkeyOf(inp.dataset.rkey)];
-      inp.value=f==='pct2'?num2.format(raw*100):num2.format(raw);
-    });
   });
-  const cbox=document.querySelector(`[data-cards="${tab}"]`); cbox.innerHTML='';
-  ANNUAL.forEach(a=>{
-    const c=document.createElement('div'); c.className='card';
-    c.innerHTML=`<div class="clbl">${lockSvg.replace(/14/g,'12')}${a.label}</div>`+
-                `<div class="cval" data-acard="${tab}-${a.key}">—</div>`;
-    cbox.appendChild(c);
-  });
+  box.querySelector('.nm-in')?.focus();
+
+  const cbox=document.querySelector(`[data-cards="${tab}"]`);
+  if(cbox){ cbox.innerHTML='';
+    ANNUAL.forEach(a=>{ const c=document.createElement('div'); c.className='card';
+      c.innerHTML=`<div class="clbl">${lockSvg.replace(/14/g,'12')}${a.label}</div><div class="cval" data-acard="${tab}-${a.key}">—</div>`;
+      cbox.appendChild(c); });
+  }
   recalcAdmin(tab);
+}
+
+function togglePencil(idKey){
+  if(editing===idKey){ confirmEdit(idKey); }
+  else { editing=idKey; renderAdminPanel(); }
+}
+
+async function confirmEdit(idKey){
+  const [tab,key]=idKey.split(':');
+  const r=ROWS.find(x=>x.key===key);
+  const nmEl=document.querySelector(`.nm-in[data-k="${key}"]`);
+  const newName=((nmEl?nmEl.value:labelFor(r))||'').trim()||r.label;
+  let note='';
+  try{
+    if(r.kind==='input'){
+      const v=admState[tab];
+      const {error}=await sb.rpc('update_config',{p_password:adminPass,p_tab:tab,
+        p_cpc:v.cpc,p_conv:v.conv,p_ticket:v.ticket,p_investimento:v.investimento});
+      if(error) throw error;
+      CONFIG[tab]={...v};
+    }
+    try{
+      const {error}=await sb.rpc('update_label',{p_password:adminPass,p_key:key,p_label:newName});
+      if(error) throw error;
+      LABELS[key]=newName;
+    }catch(e){ note=' · nome não salvo (falta rodar o SQL de nomes)'; console.warn(e); }
+    editing=null; renderAdminPanel(); adminMsg(tab,'✓ Salvo'+note,!note);
+  }catch(e){
+    editing=null; renderAdminPanel(); adminMsg(tab,'Erro ao salvar: '+(e.message||e),false);
+  }
+}
+
+function adminMsg(tab,text,ok){
+  const el=document.getElementById('amsg-'+tab);
+  if(el){ el.className='msg '+(ok?'ok':'err'); el.textContent=text; }
 }
 
 function recalcAdmin(tab){
@@ -553,28 +635,12 @@ function recalcAdmin(tab){
   });
 }
 
-async function saveTab(tab){
-  const v=admState[tab];
-  const btn=document.querySelector(`[data-save="${tab}"]`);
-  const msg=document.getElementById('msg-'+tab);
-  btn.disabled=true; msg.className='msg'; msg.textContent='Salvando…';
-  try{
-    const {error}=await sb.rpc('update_config',{
-      p_password:adminPass, p_tab:tab,
-      p_cpc:v.cpc, p_conv:v.conv, p_ticket:v.ticket, p_investimento:v.investimento});
-    if(error) throw error;
-    CONFIG[tab]={...v};
-    msg.className='msg ok'; msg.textContent='✓ Salvo — já vale na página principal.';
-  }catch(e){
-    msg.className='msg err'; msg.textContent='Erro ao salvar: '+(e.message||e);
-  }
-  btn.disabled=false;
-}
+/* (salvamento agora é por linha, via confirmEdit) */
 
 /* ================= Início ================= */
 (async ()=>{
   if(IS_ADMIN){ renderAdminLogin(); }
-  else { await loadConfig(); renderMain(); }
+  else { await Promise.all([loadConfig(), loadLabels()]); renderMain(); }
 })();
 </script>
 </body>
