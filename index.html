@@ -189,15 +189,15 @@ const lockSvg = `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock
 
 // kind: bench (travado, definido pelo admin) | calc (fórmula) | input (usuário edita)
 const ROWS = [
+  {key:'ticket',label:'Ticket / Preço',    kind:'input', fmt:'brl',  info:'ticket'},
+  {key:'inv',   label:'Investimento',      kind:'input', fmt:'brl',  strong:true},
+  {key:'conv',  label:'Taxa de conversão', kind:'input', fmt:'pct2'},
   {key:'cpc',   label:'CPC',               kind:'input', fmt:'brl',  info:'cpc'},
   {key:'clique',label:'Clique',            kind:'calc',  fmt:'num2'},
-  {key:'conv',  label:'Taxa de conversão', kind:'input', fmt:'pct2'},
   {key:'venda', label:'Venda',             kind:'calc',  fmt:'int'},
-  {key:'fat',   label:'Faturamento',       kind:'calc',  fmt:'brl'},
-  {key:'inv',   label:'Investimento',      kind:'input', fmt:'brl',  strong:true},
   {key:'cpa',   label:'CPA / CAC',         kind:'calc',  fmt:'brl',  info:'cpa'},
+  {key:'fat',   label:'Faturamento',       kind:'calc',  fmt:'brl'},
   {key:'lucro', label:'Lucro',             kind:'calc',  fmt:'brl',  strong:true},
-  {key:'ticket',label:'Ticket / Preço',    kind:'input', fmt:'brl',  info:'ticket'},
 ];
 const ANNUAL = [
   {key:'fat',    label:'Faturamento no ano', fmt:'brl',  sum:true},
