@@ -67,6 +67,8 @@
     border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;transition:var(--speed)}
   .row input:hover{border-color:var(--border-strong)}
   .row input:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
+  .row input:disabled{background:transparent;border-color:transparent;box-shadow:none;color:var(--text-subtle);cursor:default}
+  .row input::placeholder{color:var(--text-subtle);font-weight:400}
   .unit{color:var(--text-subtle);font-size:13px}
 
   /* ── Ícone de informação + tooltip ── */
@@ -261,7 +263,7 @@ const wkeyOf = rkey => rkey==='inv' ? 'investimento' : rkey;
 /* =======================================================================
    PÁGINA PRINCIPAL
 ======================================================================= */
-let curTab='mid', work={};
+let curTab=null, work={}, filled=false;
 
 function renderMain(){
   app.innerHTML =
@@ -285,15 +287,21 @@ function renderMain(){
   app.querySelectorAll('#tabs button').forEach(b=>
     b.addEventListener('click',()=>selectTab(b.dataset.tab)));
   buildCards();
-  selectTab('mid');
+  // estado inicial: só o Ticket disponível; o resto em branco
+  filled=false; curTab=null; work={ticket:'', investimento:'', conv:'', cpc:''};
+  updateTabs(); buildSheet(); recalcMain();
 }
 
+function updateTabs(){
+  app.querySelectorAll('#tabs button')
+     .forEach(b=>b.classList.toggle('on', filled && b.dataset.tab===curTab));
+}
+
+// clique direto na aba carrega todos os valores daquele segmento
 function selectTab(tab){
-  curTab=tab;
+  filled=true; curTab=tab;
   work={...CONFIG[tab]};
-  app.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===tab));
-  buildSheet();
-  recalcMain();
+  updateTabs(); buildSheet(); recalcMain();
 }
 
 function buildSheet(){
@@ -306,11 +314,15 @@ function buildSheet(){
     const info = r.info ? infoIcon(r.info) : '';
     let right;
     if(isInput){
-      const raw=work[wkeyOf(r.key)];
-      const shown = r.fmt==='pct2' ? num2.format(raw*100) : num2.format(raw);
+      const isTicket = r.key==='ticket';
+      const enabled  = filled || isTicket;         // antes de preencher o ticket, só ele fica ativo
+      const raw = work[wkeyOf(r.key)];
+      const hasVal = (isTicket ? raw>0 : filled) && raw!=='' && raw!=null;
+      const shown = hasVal ? (r.fmt==='pct2'?num2.format(raw*100):num2.format(raw)) : '';
       const unit  = r.fmt==='pct2' ? '<span class="unit">%</span>' : '';
+      const attrs = (enabled?'':'disabled ')+(isTicket?'placeholder="valor do produto"':'');
       right=`<span style="display:flex;align-items:center;gap:5px">`+
-        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}">${unit}</span>`;
+        `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}" ${attrs}>${unit}</span>`;
     }else{
       right=`<span class="val" data-out="${r.key}">—</span>`;
     }
@@ -328,29 +340,33 @@ function onMainInput(e){
   let v=parseNum(e.target.value);
   if(f==='pct2') v=v/100;
   work[wkeyOf(e.target.dataset.rkey)]=v;
-  recalcMain();
+  if(filled) recalcMain();          // só recalcula depois que o ticket foi preenchido
 }
 function onMainBlur(e){
   const rkey=e.target.dataset.rkey, f=e.target.dataset.fmt;
+  if(rkey==='ticket'){ revealFromTicket(); return; }
   const raw=work[wkeyOf(rkey)];
   e.target.value = f==='pct2' ? num2.format(raw*100) : num2.format(raw);
-  if(rkey==='ticket') autoSwitchByTicket();
 }
-// Faixa de preço → segmento (Low: R$37–97 · Mid: R$197–497)
+// Faixa de preço → segmento (Low: R$37–97 · Mid: R$197–497; fora da faixa, o mais próximo)
 function segmentForTicket(t){
   if(t>=37  && t<=97)  return 'low';
   if(t>=197 && t<=497) return 'mid';
+  if(t>0)              return t<147 ? 'low' : 'mid';
   return null;
 }
-function autoSwitchByTicket(){
-  const seg=segmentForTicket(work.ticket);
-  if(!seg || seg===curTab) return;
-  const keptTicket=work.ticket;            // preserva o ticket digitado
-  curTab=seg;
-  work={...CONFIG[seg], ticket:keptTicket}; // carrega os dados do segmento
-  app.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===seg));
-  buildSheet();
-  recalcMain();
+// Ao preencher o Ticket: abre as demais linhas e leva o menu para o segmento
+function revealFromTicket(){
+  const t=work.ticket;
+  if(!(t>0)){                                    // ticket vazio → volta ao estado inicial
+    filled=false; curTab=null;
+    work={ticket:'', investimento:'', conv:'', cpc:''};
+  }else{
+    const seg=segmentForTicket(t);
+    filled=true; curTab=seg;
+    work={...CONFIG[seg], ticket:t};             // carrega os valores determinados do segmento
+  }
+  updateTabs(); buildSheet(); recalcMain();
 }
 
 function buildCards(){
@@ -364,6 +380,17 @@ function buildCards(){
 }
 
 function recalcMain(){
+  if(!filled){
+    ROWS.filter(r=>r.kind!=='input').forEach(r=>{
+      const el=document.querySelector(`[data-out="${r.key}"]`);
+      if(el){ el.textContent='—'; el.classList.remove('neg'); }
+    });
+    ANNUAL.forEach(a=>{
+      const el=document.querySelector(`[data-card="${a.key}"]`);
+      if(el){ el.textContent='—'; el.title=''; el.classList.remove('neg'); }
+    });
+    return;
+  }
   const m=calc(work);
   ROWS.filter(r=>r.kind!=='input').forEach(r=>{
     const el=document.querySelector(`[data-out="${r.key}"]`);
