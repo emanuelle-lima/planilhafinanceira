@@ -4,108 +4,136 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Projeção Financeira</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --bg:#f7f8fa; --panel:#ffffff; --line:#eceef1;
-    --ink:#1c2430; --muted:#98a1af; --muted-txt:#8a929f;
-    --accent:#3b6fd4; --accent-soft:#eaf0fb;
-    --ok:#2f9e63; --err:#c0392b;
+    --bg-color:#F4F5F7; --surface:#FFFFFF; --surface-muted:#FAFBFC;
+    --border:#E5E7EB; --border-strong:#D5D9E0;
+    --text-color:#17181C; --text-muted:#6B7280; --text-subtle:#9AA1AC;
+    --highlight:#BFF47B; --highlight-hover:#B2EE63; --highlight-strong:#6FB52E;
+    --highlight-soft:rgba(191,244,123,.30); --on-highlight:#17300A;
+    --error-color:#E63946; --success-color:#2A9D8F;
+    --shadow-xs:0 1px 2px rgba(16,24,40,.04);
+    --shadow-md:0 4px 12px rgba(16,24,40,.06),0 2px 4px rgba(16,24,40,.03);
+    --shadow-lg:0 12px 32px rgba(16,24,40,.10),0 4px 8px rgba(16,24,40,.04);
+    --radius-sm:8px; --radius:12px; --radius-lg:16px; --radius-xl:20px; --radius-full:999px;
+    --speed:.2s;
+    --font:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
   }
   *{box-sizing:border-box}
-  body{margin:0;font-family:"Segoe UI",system-ui,-apple-system,sans-serif;
-    background:var(--bg);color:var(--ink);padding:40px 20px 64px}
-  .wrap{max-width:760px;margin:0 auto}
-  h1{font-size:24px;margin:0;font-weight:700;letter-spacing:.2px}
-  .sub{font-size:14px;color:var(--muted-txt);margin-top:6px}
-  .adm-badge{display:inline-block;font-size:11px;font-weight:700;letter-spacing:.5px;color:#fff;
-    background:var(--accent);padding:2px 8px;border-radius:6px;vertical-align:middle;margin-left:8px}
+  body{margin:0;min-height:100vh;background:var(--bg-color);color:var(--text-color);
+    font-family:var(--font);-webkit-font-smoothing:antialiased}
+  #app{width:100%}
 
-  /* Tabs */
-  .tabs{display:inline-flex;background:#eef0f3;border-radius:11px;padding:4px;margin:20px 0 6px;gap:4px}
-  .tabs button{font-family:inherit;font-size:13.5px;font-weight:600;border:0;background:transparent;
-    color:var(--muted-txt);padding:8px 18px;border-radius:8px;cursor:pointer;transition:.15s}
-  .tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(20,30,50,.10)}
+  /* ── Hero (faixa colorida full-bleed) ── */
+  .hero{background:linear-gradient(160deg,#D0F69B 0%,#BFF47B 58%,#B4F069 100%);padding:46px 0 82px}
+  .hero-sm{padding:40px 0 74px}
+  .hero-inner{max-width:720px;margin:0 auto;padding:0 24px}
+  .hero h1{margin:0;font-size:27px;font-weight:700;letter-spacing:-.02em;color:var(--on-highlight)}
+  .hero-sub{margin:6px 0 0;font-size:14px;color:rgba(23,48,10,.60)}
 
-  .section-title{font-size:12.5px;color:var(--muted-txt);font-weight:700;letter-spacing:1.2px;
-    text-transform:uppercase;margin:30px 0 12px}
+  /* ── Conteúdo sobe por cima da faixa ── */
+  .container{max-width:720px;margin:-56px auto 0;padding:0 24px 76px}
+  .container.narrow{max-width:440px}
 
-  /* Sheet */
-  .sheet{background:var(--panel);border:1px solid var(--line);border-radius:14px}
-  .row{display:flex;align-items:center;justify-content:space-between;padding:0 18px;min-height:48px;gap:12px}
-  .row + .row{border-top:1px solid var(--line)}
-  .row .name{display:flex;align-items:center;gap:9px;font-size:14px}
-  .row.locked .name{color:var(--muted-txt)}
-  .row.strong .name{font-weight:600;color:var(--ink)}
-  .lock-ic{color:var(--muted);flex:none}
-  .val{font-size:14.5px;font-variant-numeric:tabular-nums;text-align:right}
-  .row.locked .val{color:var(--muted-txt)}
-  .row.strong .val{font-weight:700}
-  .val.neg{color:var(--err)}
-  .row input{width:150px;text-align:right;font-family:inherit;font-size:14.5px;font-weight:600;
-    font-variant-numeric:tabular-nums;color:var(--ink);background:#fff;
-    border:1px solid #dfe3e9;border-radius:8px;padding:7px 10px;transition:.12s}
-  .row input:hover{border-color:#c3c9d2}
-  .row input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
-  .unit{color:var(--muted);font-size:12.5px}
+  /* ── Painel (card principal) ── */
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-lg)}
 
-  /* Info icon + tooltip */
-  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;
-    width:17px;height:17px;border-radius:50%;border:1.3px solid #c4ccd6;color:#a6aeba;
-    font-size:11px;font-weight:700;font-style:italic;cursor:help;flex:none;font-family:Georgia,serif;line-height:1}
-  .info:hover,.info:focus{border-color:var(--accent);color:var(--accent);outline:none}
+  .tabs{display:inline-flex;gap:4px;background:var(--surface-muted);border-radius:var(--radius-full);
+    padding:4px;margin:16px 22px 12px}
+  .tabs button{border:0;background:transparent;color:var(--text-muted);font-family:inherit;font-size:13.5px;
+    font-weight:600;padding:8px 20px;border-radius:var(--radius-full);cursor:pointer;transition:var(--speed)}
+  .tabs button.on{background:var(--highlight);color:var(--on-highlight);box-shadow:var(--shadow-xs)}
+
+  .sheet{border-top:1px solid var(--border);padding-bottom:6px}
+
+  .row{display:flex;align-items:center;justify-content:space-between;min-height:54px;padding:0 22px;gap:12px}
+  .row + .row{border-top:1px solid var(--border)}
+  .row .name{display:flex;align-items:center;gap:9px;font-size:14.5px;color:var(--text-color)}
+  .lock-ic{color:var(--text-subtle);flex:none}
+  .val{font-size:15px;font-variant-numeric:tabular-nums;text-align:right;color:var(--text-color)}
+  /* travados: tom sobre tom, apagado */
+  .row.locked .name,.row.locked .val{color:var(--text-muted)}
+  /* destaque (Investimento / Lucro) vence o apagado */
+  .row.strong .name{font-weight:600;color:var(--text-color)}
+  .row.strong .val{font-weight:700;color:var(--text-color)}
+  .val.neg{color:var(--error-color)}
+
+  .row input{width:150px;text-align:right;font-family:inherit;font-size:15px;font-weight:600;
+    font-variant-numeric:tabular-nums;color:var(--text-color);background:var(--surface-muted);
+    border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 11px;transition:var(--speed)}
+  .row input:hover{border-color:var(--border-strong)}
+  .row input:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
+  .unit{color:var(--text-subtle);font-size:13px}
+
+  /* ── Ícone de informação + tooltip ── */
+  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+    border-radius:50%;border:1.3px solid var(--border-strong);color:var(--text-subtle);font-size:11px;font-weight:700;
+    font-style:italic;font-family:Georgia,serif;cursor:help;flex:none;line-height:1}
+  .info:hover,.info:focus{border-color:var(--highlight-strong);color:var(--highlight-strong);outline:none}
   .info .tip{position:absolute;top:calc(100% + 9px);left:-10px;transform:translateY(4px);
-    width:250px;max-width:min(250px,76vw);background:#fff;border:1px solid var(--line);border-radius:10px;padding:11px 13px;
-    box-shadow:0 8px 26px rgba(24,32,48,.14);opacity:0;visibility:hidden;transition:.16s;z-index:30;text-align:left}
+    width:250px;max-width:min(250px,76vw);background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow-md);
+    opacity:0;visibility:hidden;transition:.16s;z-index:30;text-align:left}
   .info:hover .tip,.info:focus .tip{opacity:1;visibility:visible;transform:translateY(0)}
   .info .tip::after{content:"";position:absolute;bottom:100%;left:16px;
-    border:6px solid transparent;border-bottom-color:#fff}
-  .tip-desc{display:block;font-size:12.5px;color:var(--ink);font-weight:500;font-style:normal;line-height:1.5}
-  .tip-ref{display:block;font-size:11.5px;color:#b8c0cc;font-weight:400;font-style:normal;margin-top:7px;line-height:1.4}
+    border:6px solid transparent;border-bottom-color:var(--surface)}
+  .tip-desc{display:block;font-size:12.5px;font-weight:500;font-style:normal;color:var(--text-color);line-height:1.5}
+  .tip-ref{display:block;margin-top:7px;font-size:11.5px;font-style:normal;color:var(--text-subtle);line-height:1.4}
 
-  /* Cards (anual) */
-  .anual-head{display:flex;align-items:baseline;gap:10px}
-  .anual-head .base{font-size:11.5px;color:var(--muted);font-weight:500;letter-spacing:.3px;text-transform:none}
+  /* ── Bloco / rótulo de seção ── */
+  .block-label{font-size:13px;font-weight:600;color:var(--text-muted);margin:30px 4px 14px}
+  .block-label span{color:var(--text-subtle);font-weight:500}
+
+  /* ── Cards (projeção anual) ── */
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 15px}
-  .card .clbl{font-size:11.5px;color:var(--muted-txt);text-transform:uppercase;letter-spacing:.4px;
-    display:flex;align-items:center;gap:6px;line-height:1.3}
-  .card .cval{font-size:19px;font-weight:700;margin-top:8px;font-variant-numeric:tabular-nums}
-  .card .cval.neg{color:var(--err)}
-  .card .lock-ic{width:12px;height:12px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
+    padding:15px 16px;box-shadow:var(--shadow-xs)}
+  .card .clbl{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.3px;
+    text-transform:uppercase;color:var(--text-subtle)}
+  .card .cval{margin-top:9px;font-size:19px;font-weight:700;color:var(--text-color);
+    font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .card .cval.neg{color:var(--error-color)}
+  .card .lock-ic{color:var(--text-subtle)}
 
-  /* Admin */
-  .login{max-width:360px;margin:60px auto 0;background:#fff;border:1px solid var(--line);
-    border-radius:16px;padding:26px 24px;text-align:center}
-  .login h2{font-size:17px;margin:0 0 4px}
-  .login p{font-size:13px;color:var(--muted-txt);margin:0 0 18px}
-  .login input{width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid #dfe3e9;
-    border-radius:9px;text-align:center}
-  .login input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
-  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:9px;
-    background:var(--accent);color:#fff;padding:11px 18px;transition:.12s;width:100%;margin-top:12px}
-  .btn:hover{filter:brightness(1.06)} .btn:disabled{opacity:.6;cursor:default}
-  .btn.small{width:auto;padding:9px 20px;margin-top:0}
-  .msg{font-size:13px;margin-top:12px;min-height:18px}
-  .msg.ok{color:var(--ok)} .msg.err{color:var(--err)}
+  /* ── Login admin ── */
+  .login{max-width:400px;margin:0 auto;background:var(--surface);border:1px solid var(--border);
+    border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);padding:30px 28px;text-align:center}
+  .login h2{margin:0 0 4px;font-size:18px;font-weight:700}
+  .login p{margin:0 0 20px;font-size:13.5px;color:var(--text-muted)}
+  .login input{width:100%;font-family:inherit;font-size:15px;padding:12px 14px;border:1px solid var(--border);
+    border-radius:var(--radius);text-align:center;background:var(--surface-muted);color:var(--text-color)}
+  .login input:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
 
-  .adm-tab{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px 22px;margin-bottom:20px}
-  .adm-tab h3{margin:0 0 4px;font-size:16px}
-  .adm-tab .hint{font-size:12.5px;color:var(--muted-txt);margin:0 0 16px}
-  .adm-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
-  .fld label{display:block;font-size:12px;color:var(--muted-txt);margin-bottom:5px;font-weight:600}
-  .fld .in{display:flex;align-items:center;gap:6px;border:1px solid #dfe3e9;border-radius:9px;padding:0 10px;background:#fff}
-  .fld .in:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,111,212,.13)}
-  .fld .in span{color:var(--muted);font-size:12.5px}
-  .fld input{flex:1;border:0;outline:0;font-family:inherit;font-size:14.5px;font-weight:600;padding:9px 0;
-    font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;background:transparent}
-  .preview{margin-top:18px;border-top:1px dashed var(--line);padding-top:14px}
-  .preview .pr{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:var(--muted-txt)}
-  .preview .pr b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
-  .adm-save{display:flex;align-items:center;gap:14px;margin-top:16px}
+  .btn{font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;border:0;border-radius:var(--radius);
+    background:var(--highlight);color:var(--on-highlight);padding:12px 20px;width:100%;margin-top:14px;transition:var(--speed)}
+  .btn:hover{background:var(--highlight-hover)}
+  .btn:disabled{opacity:.55;cursor:default}
+  .btn.small{width:auto;padding:10px 22px;margin-top:0}
+  .msg{font-size:13px;min-height:18px}
+  .msg.ok{color:var(--success-color)} .msg.err{color:var(--error-color)}
+
+  /* ── Admin: bloco por guia ── */
+  .adm-tab{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);
+    box-shadow:var(--shadow-md);padding:6px 0 20px;margin-bottom:20px}
+  .adm-tab h3{margin:0;padding:18px 22px 2px;font-size:17px;font-weight:700}
+  .adm-tab .hint{margin:0;padding:0 22px 8px;font-size:12.5px;color:var(--text-muted)}
+  .adm-tab .block-label{padding:0 22px}
+  .adm-tab .cards{padding:0 22px}
+  .adm-save{display:flex;align-items:center;gap:14px;padding:16px 22px 0}
+
+  @media(max-width:640px){
+    .cards{grid-template-columns:repeat(2,1fr)}
+    .hero-inner,.container{padding-left:16px;padding-right:16px}
+    .row input{width:130px}
+  }
 </style>
 </head>
 <body>
-<div class="wrap" id="app"></div>
+<div id="app"></div>
 
 <svg style="display:none"><symbol id="ic-lock" viewBox="0 0 24 24">
   <g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -124,7 +152,7 @@ const sb = createClient(SB_URL, SB_KEY);
 const IS_ADMIN = location.hostname.includes('-adm')
               || new URLSearchParams(location.search).has('admin');
 
-/* ============ Valores padrão (fallback se o backend ainda não estiver pronto) ============ */
+/* ============ Valores padrão (fallback) ============ */
 const FALLBACK = {
   mid: {cpc:0.8, conv:0.002, ticket:2500, investimento:200000},
   low: {cpc:0.8, conv:0.06,  ticket:97,   investimento:200000},
@@ -187,7 +215,7 @@ function infoIcon(key){
 }
 const lockSvg = `<svg class="lock-ic" width="14" height="14"><use href="#ic-lock"/></svg>`;
 
-// kind: bench (travado, definido pelo admin) | calc (fórmula) | input (usuário edita)
+// kind: input (editável) | calc (resultado, com cadeado) ; fmt: brl | num2 | pct2 | int
 const ROWS = [
   {key:'ticket',label:'Ticket / Preço',    kind:'input', fmt:'brl',  info:'ticket'},
   {key:'inv',   label:'Investimento',      kind:'input', fmt:'brl',  strong:true},
@@ -211,6 +239,7 @@ const ANNUAL = [
 ];
 
 const app = document.getElementById('app');
+const wkeyOf = rkey => rkey==='inv' ? 'investimento' : rkey;
 
 /* =======================================================================
    PÁGINA PRINCIPAL
@@ -219,17 +248,23 @@ let curTab='mid', work={};
 
 function renderMain(){
   app.innerHTML =
-    `<h1>Projeção Financeira</h1>
-     <div class="sub">Simulador de tráfego pago · CPL &amp; CPA</div>
-     <div class="tabs" id="tabs">
-       <button data-tab="mid">Mid Ticket</button>
-       <button data-tab="low">Low Ticket</button>
+    `<div class="hero">
+       <div class="hero-inner">
+         <h1>Projeção Financeira</h1>
+         <p class="hero-sub">Simulador de tráfego pago</p>
+       </div>
      </div>
-     <div class="section-title">Projeção mensal</div>
-     <div class="sheet" id="sheet"></div>
-     <div class="section-title anual-head">Projeção anual <span class="base">· base: 12 meses</span></div>
-     <div class="cards" id="cards"></div>`;
-
+     <div class="container">
+       <div class="panel">
+         <div class="tabs" id="tabs">
+           <button data-tab="mid">Mid Ticket</button>
+           <button data-tab="low">Low Ticket</button>
+         </div>
+         <div class="sheet" id="sheet"></div>
+       </div>
+       <div class="block-label">Projeção anual <span>· 12 meses</span></div>
+       <div class="cards" id="cards"></div>
+     </div>`;
   app.querySelectorAll('#tabs button').forEach(b=>
     b.addEventListener('click',()=>selectTab(b.dataset.tab)));
   buildCards();
@@ -243,8 +278,6 @@ function selectTab(tab){
   buildSheet();
   recalcMain();
 }
-
-const wkeyOf = rkey => rkey==='inv' ? 'investimento' : rkey;
 
 function buildSheet(){
   const box=document.getElementById('sheet'); box.innerHTML='';
@@ -289,7 +322,7 @@ function buildCards(){
   const box=document.getElementById('cards'); box.innerHTML='';
   ANNUAL.forEach(a=>{
     const c=document.createElement('div'); c.className='card';
-    c.innerHTML=`<div class="clbl">${lockSvg.replace('14','12').replace('14','12')}${a.label}</div>`+
+    c.innerHTML=`<div class="clbl">${lockSvg.replace(/14/g,'12')}${a.label}</div>`+
                 `<div class="cval" data-card="${a.key}">—</div>`;
     box.appendChild(c);
   });
@@ -316,17 +349,24 @@ function recalcMain(){
 ======================================================================= */
 let adminPass=null;
 const admState={};
+const TAB_NAME={mid:'Mid Ticket', low:'Low Ticket'};
 
 function renderAdminLogin(){
   app.innerHTML=
-    `<h1>Projeção Financeira <span class="adm-badge">ADMIN</span></h1>
-     <div class="sub">Área restrita — defina os valores travados exibidos na página principal.</div>
-     <div class="login">
-       <h2>Acesso restrito</h2>
-       <p>Digite a senha de administrador</p>
-       <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
-       <button class="btn" id="enter">Entrar</button>
-       <div class="msg" id="loginMsg"></div>
+    `<div class="hero hero-sm">
+       <div class="hero-inner">
+         <h1>Projeção Financeira</h1>
+         <p class="hero-sub">Área do administrador</p>
+       </div>
+     </div>
+     <div class="container narrow">
+       <div class="login">
+         <h2>Acesso restrito</h2>
+         <p>Digite a senha de administrador</p>
+         <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+         <button class="btn" id="enter">Entrar</button>
+         <div class="msg" id="loginMsg"></div>
+       </div>
      </div>`;
   const pass=document.getElementById('pass');
   const msg=document.getElementById('loginMsg');
@@ -354,10 +394,13 @@ function renderAdminLogin(){
 
 function renderAdminPanel(){
   app.innerHTML=
-    `<h1>Projeção Financeira <span class="adm-badge">ADMIN</span></h1>
-     <div class="sub">Edite os valores de entrada de cada guia — os resultados são calculados automaticamente.
-       Ao salvar, os valores passam a valer como padrão para todos na página principal.</div>
-     <div id="admTabs"></div>`;
+    `<div class="hero hero-sm">
+       <div class="hero-inner">
+         <h1>Projeção Financeira</h1>
+         <p class="hero-sub">Admin · valores padrão de cada guia</p>
+       </div>
+     </div>
+     <div class="container"><div id="admTabs"></div></div>`;
   const host=document.getElementById('admTabs');
   ['mid','low'].forEach(tab=>{
     admState[tab]={...CONFIG[tab]};
@@ -365,16 +408,13 @@ function renderAdminPanel(){
   });
 }
 
-const TAB_NAME={mid:'Mid Ticket', low:'Low Ticket'};
-
 function buildAdminTab(tab){
   const wrap=document.createElement('div'); wrap.className='adm-tab';
   wrap.innerHTML=
     `<h3>${TAB_NAME[tab]}</h3>
      <p class="hint">Campos de entrada editáveis; os demais são resultado das fórmulas.</p>
      <div class="sheet" data-sheet="${tab}"></div>
-     <div class="section-title anual-head" style="margin:22px 0 12px">Projeção anual
-       <span class="base">· base: 12 meses</span></div>
+     <div class="block-label" style="margin:20px 0 12px">Projeção anual <span>· 12 meses</span></div>
      <div class="cards" data-cards="${tab}"></div>
      <div class="adm-save">
        <button class="btn small" data-save="${tab}">Salvar</button>
@@ -443,6 +483,7 @@ function recalcAdmin(tab){
     el.textContent=fmt(v,a.fmt); if(a.neg) el.classList.toggle('neg',v<0);
   });
 }
+
 async function saveTab(tab){
   const v=admState[tab];
   const btn=document.querySelector(`[data-save="${tab}"]`);
