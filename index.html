@@ -338,6 +338,7 @@ function buildSheet(){
     inp.addEventListener('input',onMainInput);
     inp.addEventListener('focus',e=>e.target.select());
     inp.addEventListener('blur',onMainBlur);
+    inp.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); e.target.blur(); } });
   });
 }
 function onMainInput(e){
