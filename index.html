@@ -72,10 +72,10 @@
   .unit{color:var(--text-subtle);font-size:13px}
 
   /* ── Ícone de informação + tooltip ── */
-  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
-    border-radius:50%;border:1.3px solid var(--border-strong);color:var(--text-subtle);font-size:10.5px;font-weight:700;
-    font-style:normal;font-family:var(--font);cursor:help;flex:none;line-height:1}
-  .info:hover,.info:focus{border-color:var(--highlight-strong);color:var(--highlight-strong);outline:none}
+  .info{position:relative;display:inline-flex;align-items:center;justify-content:center;
+    color:var(--text-subtle);cursor:help;flex:none}
+  .info svg{display:block}
+  .info:hover,.info:focus{color:var(--highlight-strong)}
   .info .tip{position:absolute;top:calc(100% + 9px);left:-10px;transform:translateY(4px);
     width:250px;max-width:min(250px,76vw);background:var(--surface);border:1px solid var(--border);
     border-radius:var(--radius);padding:12px 14px;box-shadow:var(--shadow-md);
@@ -88,14 +88,14 @@
 
   /* ── Bloco / rótulo de seção ── */
   .block-label{font-size:13px;font-weight:600;color:var(--text-muted);margin:30px 4px 14px}
-  .block-label span{color:var(--text-subtle);font-weight:500}
+  .block-label span{color:var(--text-subtle);font-weight:500;margin-left:8px}
 
   /* ── Cards (projeção anual) ── */
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
     padding:15px 16px;box-shadow:var(--shadow-xs);text-align:center}
-  .card .clbl{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.3px;
-    text-transform:uppercase;color:var(--text-subtle)}
+  .card .clbl{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11.5px;font-weight:600;letter-spacing:0;
+    color:var(--text-subtle)}
   .card .cval{margin-top:9px;font-size:19px;font-weight:700;color:var(--text-color);
     font-variant-numeric:tabular-nums;letter-spacing:-.01em}
   .card .cval.neg{color:var(--error-color)}
@@ -121,7 +121,7 @@
   /* ── Admin: bloco por guia ── */
   .adm-tab{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-xl);
     box-shadow:var(--shadow-md);padding:6px 0 20px;margin-bottom:20px}
-  .adm-tab h3{margin:0;padding:18px 22px 2px;font-size:17px;font-weight:700}
+  .adm-tab h2{margin:0;padding:18px 22px 2px;font-size:17px;font-weight:700}
   .adm-tab .hint{margin:0;padding:0 22px 8px;font-size:12.5px;color:var(--text-muted)}
   .adm-tab .block-label{padding:0 22px}
   .adm-tab .cards{padding:0 22px}
@@ -131,7 +131,7 @@
   .adm-sheet{border-top:1px solid var(--border)}
   .adm-row{display:grid;grid-template-columns:1fr 165px 46px;align-items:center;gap:10px;min-height:52px;padding:0 22px}
   .adm-row + .adm-row{border-top:1px solid var(--border)}
-  .adm-head{min-height:38px;color:var(--text-subtle);font-size:10.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase}
+  .adm-head{min-height:38px;color:var(--text-subtle);font-size:12px;font-weight:600;letter-spacing:0}
   .adm-head span:nth-child(2){text-align:right}
   .adm-row .c-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .adm-row .c-val{text-align:right}
@@ -149,15 +149,25 @@
   .vl-in{width:106px;text-align:right;font-family:inherit;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;
     padding:7px 9px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-muted);color:var(--text-color)}
   .vl-in:focus{outline:none;border-color:var(--highlight-strong);box-shadow:0 0 0 3px var(--highlight-soft)}
-  .pencil-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;
+  .pencil-btn{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;
     border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);color:var(--text-muted);cursor:pointer;transition:var(--speed)}
   .pencil-btn:hover{border-color:var(--highlight-strong);color:var(--highlight-strong)}
   .pencil-btn.on{background:var(--highlight);border-color:var(--highlight);color:var(--on-highlight)}
+
+  .tabs button:focus-visible,.pencil-btn:focus-visible,.btn:focus-visible,.info:focus-visible{
+    outline:2px solid var(--highlight-strong);outline-offset:2px}
 
   @media(max-width:640px){
     .cards{grid-template-columns:repeat(2,1fr)}
     .hero-inner,.container{padding-left:16px;padding-right:16px}
     .row input{width:130px}
+    .row input,.login input,.nm-in,.vl-in{min-height:44px}
+    .pencil-btn{width:44px;height:44px}
+    .tabs button,.btn{min-height:44px}
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important; animation:none !important}
   }
 </style>
 </head>
@@ -260,11 +270,11 @@ const INFO = {
   cpa:    {desc:'Quanto foi investido em anúncios para conseguir uma venda / cliente.',
            ref:''},
   ticket: {desc:'É o preço do seu produto / oferta.',
-           ref:'Low ticket: R$ 37 a R$ 97  ·  Mid ticket: R$ 197 a R$ 497'},
+           ref:'Low ticket: R$ 37 a R$ 97<br>Mid ticket: R$ 197 a R$ 497'},
 };
 function infoIcon(key){
   const i=INFO[key]; if(!i) return '';
-  return `<span class="info" tabindex="0">i<span class="tip">`+
+  return `<span class="info" tabindex="0" aria-label="Mais informações"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg><span class="tip">`+
     `<span class="tip-desc">${i.desc}</span>`+
     (i.ref?`<span class="tip-ref">${i.ref}</span>`:'')+`</span></span>`;
 }
@@ -317,7 +327,7 @@ function renderMain(){
          </div>
          <div class="sheet" id="sheet"></div>
        </div>
-       <div class="block-label">Projeção anual <span>· 12 meses</span></div>
+       <div class="block-label">Projeção anual <span>12 meses</span></div>
        <div class="cards" id="cards"></div>
      </div>`;
   app.querySelectorAll('#tabs button').forEach(b=>
@@ -360,7 +370,7 @@ function buildSheet(){
         const suf = r.fmt==='pct2' ? '<span class="unit">%</span>'  : '';
         const ph  = isTicket ? 'placeholder="0,00"' : '';
         right=`<span style="display:flex;align-items:center;gap:6px">${pre}`+
-          `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}" ${ph}>${suf}</span>`;
+          `<input type="text" value="${shown}" data-rkey="${r.key}" data-fmt="${r.fmt}" aria-label="${labelFor(r)}" ${ph}>${suf}</span>`;
       }else{
         right=`<span class="val" data-out="${r.key}" style="color:var(--text-muted)">—</span>`;
       }
@@ -467,7 +477,7 @@ function renderAdminLogin(){
        <div class="login">
          <h2>Acesso restrito</h2>
          <p>Digite a senha de administrador</p>
-         <input id="pass" type="password" placeholder="Senha" autocomplete="current-password">
+         <input id="pass" type="password" placeholder="Senha" aria-label="Senha" autocomplete="current-password">
          <button class="btn" id="enter">Entrar</button>
          <div class="msg" id="loginMsg"></div>
        </div>
@@ -501,7 +511,7 @@ function renderAdminPanel(){
     `<div class="hero hero-sm">
        <div class="hero-inner">
          <h1>Projeção Financeira</h1>
-         <p class="hero-sub">Admin · valores padrão de cada guia</p>
+         <p class="hero-sub">Valores padrão de cada guia</p>
        </div>
      </div>
      <div class="container"><div id="admTabs"></div></div>`;
@@ -519,9 +529,9 @@ const checkSvg =`<svg width="16" height="16" viewBox="0 0 24 24" fill="none" str
 function buildAdminTab(tab){
   const wrap=document.createElement('div'); wrap.className='adm-tab';
   wrap.innerHTML=
-    `<h3>${TAB_NAME[tab]}</h3>
+    `<h2>${TAB_NAME[tab]}</h2>
      <div class="sheet adm-sheet" data-sheet="${tab}"></div>
-     <div class="block-label" style="margin:20px 0 12px">Projeção anual <span>· 12 meses</span></div>
+     <div class="block-label" style="margin:20px 0 12px">Projeção anual <span>12 meses</span></div>
      <div class="cards" data-cards="${tab}"></div>
      <div class="msg" id="amsg-${tab}" style="padding:12px 22px 0"></div>`;
   setTimeout(()=>buildAdminSheet(tab));
@@ -541,7 +551,7 @@ function buildAdminSheet(tab){
     const row=document.createElement('div'); row.className='adm-row'+(r.strong?' strong':'');
 
     const nameCell = isEditing
-      ? `<input class="nm-in" data-k="${r.key}" value="${labelFor(r).replace(/"/g,'&quot;')}">`
+      ? `<input class="nm-in" data-k="${r.key}" aria-label="Nome da métrica" value="${labelFor(r).replace(/"/g,'&quot;')}">`
       : `<span class="adm-nm">${labelFor(r)}</span>`;
 
     let valCell;
@@ -551,7 +561,7 @@ function buildAdminSheet(tab){
         const shown=r.fmt==='pct2'?num2.format(raw*100):num2.format(raw);
         const pre=r.fmt==='brl'?'<span class="unit">R$</span>':'';
         const suf=r.fmt==='pct2'?'<span class="unit">%</span>':'';
-        valCell=`<span class="val-edit">${pre}<input class="vl-in" data-k="${r.key}" data-fmt="${r.fmt}" value="${shown}">${suf}</span>`;
+        valCell=`<span class="val-edit">${pre}<input class="vl-in" data-k="${r.key}" data-fmt="${r.fmt}" aria-label="Valor de ${labelFor(r)}" value="${shown}">${suf}</span>`;
       }else{
         const raw=admState[tab][wkeyOf(r.key)];
         const disp=r.fmt==='brl'?brl.format(raw):(r.fmt==='pct2'?num2.format(raw*100)+'%':num2.format(raw));
@@ -595,7 +605,7 @@ async function confirmEdit(idKey){
   const r=ROWS.find(x=>x.key===key);
   const nmEl=document.querySelector(`.nm-in[data-k="${key}"]`);
   const newName=((nmEl?nmEl.value:labelFor(r))||'').trim()||r.label;
-  let note='';
+  let nameFailed=false;
   try{
     if(r.kind==='input'){
       const v=admState[tab];
@@ -608,8 +618,10 @@ async function confirmEdit(idKey){
       const {error}=await sb.rpc('update_label',{p_password:adminPass,p_key:key,p_label:newName});
       if(error) throw error;
       LABELS[key]=newName;
-    }catch(e){ note=' · nome não salvo (falta rodar o SQL de nomes)'; console.warn(e); }
-    editing=null; renderAdminPanel(); adminMsg(tab,'✓ Salvo'+note,!note);
+    }catch(e){ nameFailed=true; console.warn(e); }
+    editing=null; renderAdminPanel();
+    if(nameFailed) adminMsg(tab,'Valor salvo. Nome não salvo, rode o SQL de nomes.',false);
+    else adminMsg(tab,'Salvo, já vale na página principal.',true);
   }catch(e){
     editing=null; renderAdminPanel(); adminMsg(tab,'Erro ao salvar: '+(e.message||e),false);
   }
