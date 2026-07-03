@@ -331,8 +331,26 @@ function onMainInput(e){
   recalcMain();
 }
 function onMainBlur(e){
-  const f=e.target.dataset.fmt, raw=work[wkeyOf(e.target.dataset.rkey)];
+  const rkey=e.target.dataset.rkey, f=e.target.dataset.fmt;
+  const raw=work[wkeyOf(rkey)];
   e.target.value = f==='pct2' ? num2.format(raw*100) : num2.format(raw);
+  if(rkey==='ticket') autoSwitchByTicket();
+}
+// Faixa de preço → segmento (Low: R$37–97 · Mid: R$197–497)
+function segmentForTicket(t){
+  if(t>=37  && t<=97)  return 'low';
+  if(t>=197 && t<=497) return 'mid';
+  return null;
+}
+function autoSwitchByTicket(){
+  const seg=segmentForTicket(work.ticket);
+  if(!seg || seg===curTab) return;
+  const keptTicket=work.ticket;            // preserva o ticket digitado
+  curTab=seg;
+  work={...CONFIG[seg], ticket:keptTicket}; // carrega os dados do segmento
+  app.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===seg));
+  buildSheet();
+  recalcMain();
 }
 
 function buildCards(){
