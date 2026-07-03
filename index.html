@@ -71,8 +71,8 @@
 
   /* ── Ícone de informação + tooltip ── */
   .info{position:relative;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
-    border-radius:50%;border:1.3px solid var(--border-strong);color:var(--text-subtle);font-size:11px;font-weight:700;
-    font-style:italic;font-family:Georgia,serif;cursor:help;flex:none;line-height:1}
+    border-radius:50%;border:1.3px solid var(--border-strong);color:var(--text-subtle);font-size:10.5px;font-weight:700;
+    font-style:normal;font-family:var(--font);cursor:help;flex:none;line-height:1}
   .info:hover,.info:focus{border-color:var(--highlight-strong);color:var(--highlight-strong);outline:none}
   .info .tip{position:absolute;top:calc(100% + 9px);left:-10px;transform:translateY(4px);
     width:250px;max-width:min(250px,76vw);background:var(--surface);border:1px solid var(--border);
@@ -91,8 +91,8 @@
   /* ── Cards (projeção anual) ── */
   .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
   .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);
-    padding:15px 16px;box-shadow:var(--shadow-xs)}
-  .card .clbl{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.3px;
+    padding:15px 16px;box-shadow:var(--shadow-xs);text-align:center}
+  .card .clbl{display:flex;align-items:center;justify-content:center;gap:6px;font-size:11px;font-weight:600;letter-spacing:.3px;
     text-transform:uppercase;color:var(--text-subtle)}
   .card .cval{margin-top:9px;font-size:19px;font-weight:700;color:var(--text-color);
     font-variant-numeric:tabular-nums;letter-spacing:-.01em}
@@ -186,6 +186,23 @@ function fmt(v,t){
 const dv=(a,b)=> b? a/b : 0;
 function parseNum(s){ s=(''+s).replace(/[^\d,.-]/g,'').replace(/\./g,'').replace(',','.');
   const n=parseFloat(s); return isNaN(n)?0:n; }
+
+/* Abreviação k / M para a projeção anual (ex.: 1.000 → 1k · 3.500 → 3,5k · 1.000.000 → 1M) */
+function abbrevNum(v){
+  const neg=v<0; let n=Math.abs(v), out;
+  const t=x=>(Math.round(x*10)/10).toLocaleString('pt-BR',{maximumFractionDigits:1});
+  if(n>=1e6)      out=t(n/1e6)+'M';
+  else if(n>=1e3) out=t(n/1e3)+'k';
+  else            out=t(n);
+  return (neg?'-':'')+out;
+}
+function fmtAnnual(v,type){
+  if(!isFinite(v)||isNaN(v)) return '—';
+  if(type==='pct0') return Math.round(v*100)+'%';
+  if(type==='pct2') return num2.format(v*100)+'%';
+  const s=abbrevNum(v);
+  return type==='brl' ? 'R$ '+s : s;
+}
 
 /* ================= Fórmulas (idênticas à planilha) ================= */
 function calc(v){
@@ -339,7 +356,7 @@ function recalcMain(){
     const el=document.querySelector(`[data-card="${a.key}"]`);
     if(!el) return;
     const v=a.sum? m[a.key]*12 : m[a.key];
-    el.textContent=fmt(v,a.fmt);
+    el.textContent=fmtAnnual(v,a.fmt); el.title=fmt(v,a.fmt);
     if(a.neg) el.classList.toggle('neg',v<0);
   });
 }
@@ -480,7 +497,8 @@ function recalcAdmin(tab){
     const el=document.querySelector(`[data-acard="${tab}-${a.key}"]`);
     if(!el) return;
     const v=a.sum?m[a.key]*12:m[a.key];
-    el.textContent=fmt(v,a.fmt); if(a.neg) el.classList.toggle('neg',v<0);
+    el.textContent=fmtAnnual(v,a.fmt); el.title=fmt(v,a.fmt);
+    if(a.neg) el.classList.toggle('neg',v<0);
   });
 }
 
