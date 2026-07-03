@@ -276,8 +276,8 @@ function renderMain(){
      <div class="container">
        <div class="panel">
          <div class="tabs" id="tabs">
-           <button data-tab="mid">Mid Ticket</button>
            <button data-tab="low">Low Ticket</button>
+           <button data-tab="mid">Mid Ticket</button>
          </div>
          <div class="sheet" id="sheet"></div>
        </div>
@@ -469,7 +469,7 @@ function renderAdminPanel(){
      </div>
      <div class="container"><div id="admTabs"></div></div>`;
   const host=document.getElementById('admTabs');
-  ['mid','low'].forEach(tab=>{
+  ['low','mid'].forEach(tab=>{
     admState[tab]={...CONFIG[tab]};
     host.appendChild(buildAdminTab(tab));
   });
